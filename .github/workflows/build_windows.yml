@@ -1,0 +1,73 @@
+name: Build Windows
+
+on:
+  push:
+    branches: [ master, main, release-* ]
+  pull_request:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    runs-on: windows-2019
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Setup MSVC
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+
+    - name: Cache dependencies
+      id: cache-deps
+      uses: actions/cache@v4
+      with:
+        path: |
+          deps/build
+        key: ${{ runner.os }}-deps-${{ hashFiles('deps/**/CMakeLists.txt', 'deps/**/*.cmake') }}
+        restore-keys: |
+          ${{ runner.os }}-deps-
+
+    - name: Build dependencies
+      if: steps.cache-deps.outputs.cache-hit != 'true'
+      run: |
+        cd deps
+        mkdir build
+        cd build
+        cmake ../ -G "Visual Studio 16 2019" -A x64 -DDESTDIR="${{ github.workspace }}/deps/build/OrcaSlicer_dep" -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DDEP_DEBUG=OFF -DCMAKE_SYSTEM_VERSION=10.0.19041.0
+        cmake --build . --config ${{ env.BUILD_TYPE }} --target deps -- -m
+
+    - name: Configure CMake
+      run: |
+        mkdir build
+        cd build
+        cmake .. -G "Visual Studio 16 2019" -A x64 -DBBL_RELEASE_TO_PUBLIC=1 -DCMAKE_PREFIX_PATH="${{ github.workspace }}/deps/build/OrcaSlicer_dep/usr/local" -DCMAKE_INSTALL_PREFIX="./CrealityPrint" -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DWIN10SDK_PATH="C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0"
+
+    - name: Build
+      run: |
+        cd build
+        cmake --build . --config ${{ env.BUILD_TYPE }} --target ALL_BUILD -- -m
+
+    - name: Generate localization
+      run: |
+        call run_gettext.bat
+      shell: cmd
+
+    - name: Install
+      run: |
+        cd build
+        cmake --build . --target install --config ${{ env.BUILD_TYPE }}
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: CrealityPrint-Windows
+        path: build/CrealityPrint/
+        retention-days: 7
