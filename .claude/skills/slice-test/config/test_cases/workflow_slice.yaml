@@ -1,0 +1,173 @@
+# Complete Slice Workflow Test Cases
+# Tests the full workflow from import to gcode generation
+
+gui_test_cases:
+  # ==========================================
+  # Complete Slice Workflow Test
+  # ==========================================
+  - id: "GUI-WORKFLOW-SLICE-001"
+    name: "Complete Slice Workflow with Validation"
+    description: |
+      Complete workflow test:
+      1. Import model via File menu
+      2. Modify layer height
+      3. Slice the model
+      4. Verify slicing status changes
+      5. Verify gcode file is generated
+    tags: ["smoke", "workflow", "slice", "validation", "gui"]
+    timeout: 300
+    enabled: true
+    setup: []
+    steps:
+      # Step 1: Start application
+      - action: start_app
+        params: {}
+      - action: wait
+        params:
+          seconds: 5
+
+      # Step 2: Click menu File -> Import
+      - action: click_menu
+        params:
+          menu: "File"
+          submenu: "Import..."
+      - action: wait
+        params:
+          seconds: 1
+
+      # Step 3: Navigate file dialog and select file
+      - action: file_dialog_navigate
+        params:
+          path: "C:\\TestData"
+      - action: wait
+        params:
+          seconds: 0.5
+      - action: file_dialog_select
+        params:
+          filename: "cube.stl"
+      - action: wait
+        params:
+          seconds: 0.5
+
+      # Step 4: Click Open button
+      - action: file_dialog_click_open
+        params: {}
+      - action: wait
+        params:
+          seconds: 3
+
+      # Step 5: Verify model loaded (check status bar or viewport)
+      - action: verify_status_bar
+        params:
+          contains: ""  # Any non-error status
+      - action: screenshot
+        params:
+          name: "model_loaded"
+
+      # Step 6: Set layer height to 0.16
+      - action: set_input_field
+        params:
+          label: "Layer height"
+          value: "0.16"
+          clear_first: true
+      - action: wait
+        params:
+          seconds: 0.5
+
+      # Step 7: Click Slice Plate button
+      - action: click_slice_plate
+        params: {}
+      - action: wait
+        params:
+          seconds: 1
+
+      # Step 8: Verify status changes to "Slicing..."
+      - action: verify_status_bar
+        params:
+          contains: "Slicing"
+          timeout: 5
+
+      # Step 9: Wait for slicing to complete
+      - action: wait_for_slice_complete
+        params:
+          timeout: 180
+          progress_check: true
+
+      # Step 10: Verify status shows "Slice complete!"
+      - action: verify_status_bar
+        params:
+          contains: "complete"
+      - action: screenshot
+        params:
+          name: "slice_complete"
+
+      # Step 11: Verify auto-switched to Preview tab
+      - action: verify_active_tab
+        params:
+          tab: "Preview"
+
+      # Step 12: Verify gcode output path
+      - action: verify_gcode_output_path
+        params:
+          pattern: "SlicerOutput\\\\cube.gcode"
+
+      # Step 13: Verify gcode file exists and size > 1KB
+      - action: verify_file_exists
+        params:
+          path_pattern: "Documents\\\\SlicerOutput\\\\cube.gcode"
+          min_size_kb: 1
+
+      # Cleanup
+      - action: close_app
+        params: {}
+
+    # Expected results for reporting
+    expected:
+      status_bar_changes:
+        - from: "Ready"
+          to: "Slicing..."
+        - from: "Slicing..."
+          to: "complete"
+      auto_switch_tab: "Preview"
+      gcode_file:
+        path_contains: "SlicerOutput/cube.gcode"
+        min_size_kb: 1
+
+  # ==========================================
+  # Alternative: Quick Slice Test (Keyboard Shortcuts)
+  # ==========================================
+  - id: "GUI-WORKFLOW-SLICE-002"
+    name: "Quick Slice via Keyboard"
+    description: "Fast slice test using keyboard shortcuts"
+    tags: ["smoke", "slice", "keyboard", "gui"]
+    timeout: 180
+    enabled: true
+    steps:
+      - action: start_app
+        params: {}
+      - action: wait
+        params:
+          seconds: 5
+
+      # Ctrl+O to add model
+      - action: add_model
+        params:
+          file: "C:\\TestData\\cube.stl"
+      - action: wait
+        params:
+          seconds: 2
+
+      # Ctrl+R to slice
+      - action: hotkey
+        params:
+          keys: ["ctrl", "r"]
+      - action: wait
+        params:
+          seconds: 60
+
+      - action: screenshot
+        params:
+          name: "quick_slice_done"
+
+      - action: close_app
+        params: {}

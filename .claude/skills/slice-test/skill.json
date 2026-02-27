@@ -1,0 +1,27 @@
+{
+  "name": "slice-test",
+  "version": "1.1.0",
+  "description": "Automated slicing test suite for Creality Print CLI",
+  "author": "Claude Code",
+  "cli_path": "build_unified/src/RelWithDebInfo/CrealityPrint.exe",
+  "cli_path_fallback": "build_unified/src/Release/CrealityPrint.exe",
+  "test_data_dir": "tests/data",
+  "output_dir": ".claude/skills/slice-test/output",
+  "default_timeout": 300,
+  "error_codes": {
+    "CLI_SUCCESS": 0,
+    "CLI_INVALID_PARAMS": -2,
+    "CLI_FILE_NOTFOUND": -3,
+    "CLI_ERROR": 127,
+    "CLI_SLICING_ERROR": -100
+  },
+  "commands": {
+    "slice": {
+      "template": "\"{cli}\" \"{input}\" --slice 0 --outputdir \"{outputdir}\"",
+      "with_config": "\"{cli}\" \"{input}\" --slice 0 --load_settings \"{config}\" --outputdir \"{outputdir}\""
+    }
+  },
+  "dependencies": ["pyyaml", "jinja2"],
+  "optional_dependencies": ["pywinauto", "pyautogui", "pillow"],
+  "tags": ["testing", "slicing", "automation", "cli"]
+}

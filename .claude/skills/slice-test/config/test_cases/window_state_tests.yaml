@@ -1,0 +1,271 @@
+# Window State Detection Test Cases
+# Tests for UI position detection under different window states
+
+gui_test_cases:
+  # ========================================
+  # Basic Window State Detection
+  # ========================================
+
+  - id: WINSTATE-001
+    name: Window State Detection - Normal Mode
+    description: Verify UI component positions in normal window mode
+    tags: [window_state, smoke]
+    enabled: true
+    timeout: 60
+    setup:
+      - action: start_app
+    steps:
+      - action: wait
+        params:
+          seconds: 3
+      - action: verify_window_state
+        params:
+          expected_state: normal
+      - action: log
+        params:
+          message: "Window state verified as normal"
+      - action: get_dpi_info
+    teardown:
+      - action: close_app
+
+  - id: WINSTATE-002
+    name: Window State Detection - Maximized Mode
+    description: Verify window state detection in maximized mode
+    tags: [window_state]
+    enabled: true
+    timeout: 60
+    setup:
+      - action: start_app
+    steps:
+      - action: wait
+        params:
+          seconds: 2
+      - action: maximize_window
+      - action: wait
+        params:
+          seconds: 1
+      - action: verify_window_state
+        params:
+          expected_state: maximized
+      - action: log
+        params:
+          message: "Window maximized successfully"
+      - action: restore_window
+      - action: wait
+        params:
+          seconds: 1
+      - action: verify_window_state
+        params:
+          expected_state: normal
+    teardown:
+      - action: close_app
+
+  - id: WINSTATE-003
+    name: Window State Detection - Minimized and Restore
+    description: Verify minimize and restore functionality
+    tags: [window_state]
+    enabled: true
+    timeout: 60
+    setup:
+      - action: start_app
+    steps:
+      - action: wait
+        params:
+          seconds: 2
+      - action: minimize_window
+      - action: wait
+        params:
+          seconds: 1
+      - action: verify_window_state
+        params:
+          expected_state: minimized
+      - action: restore_window
+      - action: wait
+        params:
+          seconds: 1
+      - action: verify_window_state
+        params:
+          expected_state: normal
+    teardown:
+      - action: close_app
+
+  # ========================================
+  # DPI and Scale Factor Tests
+  # ========================================
+
+  - id: WINSTATE-004
+    name: DPI Detection Test
+    description: Detect and report current DPI settings
+    tags: [window_state, dpi]
+    enabled: true
+    timeout: 60
+    setup:
+      - action: start_app
+    steps:
+      - action: wait
+        params:
+          seconds: 2
+      - action: get_dpi_info
+      - action: screenshot
+        params:
+          name: dpi_detection_test
+    teardown:
+      - action: close_app
+
+  - id: WINSTATE-005
+    name: Coordinate Conversion Test
+    description: Verify screen-to-client coordinate conversion
+    tags: [window_state, coordinates]
+    enabled: true
+    timeout: 60
+    setup:
+      - action: start_app
+    steps:
+      - action: wait
+        params:
+          seconds: 2
+      - action: verify_coordinate_conversion
+        params:
+          test_screen_x: 500
+          test_screen_y: 500
+    teardown:
+      - action: close_app
+
+  # ========================================
+  # Adaptive Click Tests
+  # ========================================
+
+  - id: WINSTATE-006
+    name: Adaptive Click - Normal Window
+    description: Test adaptive click in normal window mode
+    tags: [window_state, click]
+    enabled: true
+    timeout: 120
+    setup:
+      - action: start_app
+    steps:
+      - action: wait
+        params:
+          seconds: 3
+      - action: verify_window_state
+        params:
+          expected_state: normal
+      - action: adaptive_click
+        params:
+          text: "Slice"
+          wait_stable: true
+          timeout: 10
+    teardown:
+      - action: close_app
+
+  - id: WINSTATE-007
+    name: Adaptive Click - Maximized Window
+    description: Test adaptive click in maximized window mode
+    tags: [window_state, click]
+    enabled: true
+    timeout: 120
+    setup:
+      - action: start_app
+    steps:
+      - action: wait
+        params:
+          seconds: 2
+      - action: maximize_window
+      - action: wait
+        params:
+          seconds: 1
+      - action: verify_window_state
+        params:
+          expected_state: maximized
+      - action: adaptive_click
+        params:
+          text: "Slice"
+          wait_stable: true
+          timeout: 10
+    teardown:
+      - action: close_app
+
+  # ========================================
+  # Element Position Verification Tests
+  # ========================================
+
+  - id: WINSTATE-008
+    name: Element Position Stability Test
+    description: Verify element positions remain stable across window state changes
+    tags: [window_state, position]
+    enabled: true
+    timeout: 120
+    setup:
+      - action: start_app
+    steps:
+      - action: wait
+        params:
+          seconds: 2
+      # Get position in normal mode
+      - action: get_element_position
+        params:
+          element_id: slice_button
+          save_as: normal_position
+      # Maximize and check position
+      - action: maximize_window
+      - action: wait
+        params:
+          seconds: 1
+      - action: get_element_position
+        params:
+          element_id: slice_button
+          save_as: maximized_position
+      # Restore and verify position returns
+      - action: restore_window
+      - action: wait
+        params:
+          seconds: 1
+      - action: verify_element_position
+        params:
+          element_id: slice_button
+          expected_x: "${normal_position.x}"
+          expected_y: "${normal_position.y}"
+          tolerance: 5
+    teardown:
+      - action: close_app
+
+  # ========================================
+  # Full Screen Detection Tests (if applicable)
+  # ========================================
+
+  - id: WINSTATE-009
+    name: Fullscreen State Detection
+    description: Detect if application enters fullscreen mode (F11)
+    tags: [window_state, fullscreen]
+    enabled: true
+    timeout: 60
+    setup:
+      - action: start_app
+    steps:
+      - action: wait
+        params:
+          seconds: 2
+      - action: verify_window_state
+        params:
+          expected_state: normal
+      # Press F11 to toggle fullscreen (if supported)
+      - action: press_key
+        params:
+          key: f11
+      - action: wait
+        params:
+          seconds: 1
+      # Check if fullscreen detected (may be normal if F11 not supported)
+      - action: log_window_state
+      # Press F11 again to exit fullscreen
+      - action: press_key
+        params:
+          key: f11
+      - action: wait
+        params:
+          seconds: 1
+      - action: verify_window_state
+        params:
+          expected_state: normal
+    teardown:
+      - action: close_app

@@ -1,0 +1,37 @@
+{
+  "print_settings": {
+    "layer_height": 0.2,
+    "first_layer_height": 0.3,
+    "perimeters": 3,
+    "top_solid_layers": 4,
+    "bottom_solid_layers": 4,
+    "fill_density": "20%",
+    "fill_pattern": "grid",
+    "infill_every_layers": 1,
+    "perimeter_speed": 60,
+    "infill_speed": 80,
+    "travel_speed": 150,
+    "first_layer_speed": "30%",
+    "retract_length": 0.8,
+    "retract_speed": 35,
+    "retract_before_travel": 2
+  },
+  "filament_settings": {
+    "filament_diameter": 1.75,
+    "filament_type": "PLA",
+    "temperature": 210,
+    "bed_temperature": 60,
+    "first_layer_temperature": 215,
+    "first_layer_bed_temperature": 65,
+    "cooling": true,
+    "min_fan_speed": 35,
+    "max_fan_speed": 100
+  },
+  "printer_settings": {
+    "printer_technology": "FDM",
+    "bed_shape": "0x0,220x0,220x220,0x220",
+    "max_print_height": 250,
+    "extruder_count": 1,
+    "gcode_flavor": "marlin"
+  }
+}

@@ -1,0 +1,271 @@
+# GUI Basic Test Cases (Optimized for wxWidgets)
+# Uses text-based and keyboard strategies for maximum reliability
+
+gui_test_cases:
+  # ==========================================
+  # Application Lifecycle Tests
+  # ==========================================
+  - id: "GUI-LIFECYCLE-001"
+    name: "Application Startup and Shutdown"
+    description: "Verify application starts and closes correctly"
+    tags: ["smoke", "lifecycle", "gui"]
+    timeout: 60
+    setup: []
+    steps:
+      - action: start_app
+        params: {}
+      - action: wait
+        params:
+          seconds: 3
+      - action: screenshot
+        params:
+          name: "main_window_initial"
+      - action: close_app
+        params: {}
+    teardown: []
+    enabled: true
+
+  # ==========================================
+  # Model Loading Tests (Keyboard-based)
+  # ==========================================
+  - id: "GUI-MODEL-001"
+    name: "Add Model via Ctrl+O"
+    description: "Test adding a model using keyboard shortcut"
+    tags: ["smoke", "model", "gui"]
+    timeout: 60
+    setup: []
+    steps:
+      - action: start_app
+        params: {}
+      - action: wait
+        params:
+          seconds: 5
+      - action: add_model
+        params:
+          file: "tests/data/20mm_cube.obj"
+      - action: wait
+        params:
+          seconds: 3
+      - action: screenshot
+        params:
+          name: "model_loaded"
+      - action: close_app
+        params: {}
+    enabled: true
+
+  - id: "GUI-MODEL-002"
+    name: "Add STL Model"
+    description: "Test adding an STL file"
+    tags: ["model", "stl", "gui"]
+    timeout: 60
+    setup: []
+    steps:
+      - action: start_app
+        params: {}
+      - action: wait
+        params:
+          seconds: 5
+      - action: add_model
+        params:
+          file: "tests/data/test_stl/ASCII/20mmbox-LF.stl"
+      - action: wait
+        params:
+          seconds: 3
+      - action: screenshot
+        params:
+          name: "stl_loaded"
+      - action: close_app
+        params: {}
+    enabled: true
+
+  # ==========================================
+  # Slicing Tests (Keyboard-based)
+  # ==========================================
+  - id: "GUI-SLICE-001"
+    name: "Slice via Ctrl+R"
+    description: "Test slicing using keyboard shortcut"
+    tags: ["smoke", "slice", "gui"]
+    timeout: 180
+    setup: []
+    steps:
+      - action: start_app
+        params: {}
+      - action: wait
+        params:
+          seconds: 5
+      - action: add_model
+        params:
+          file: "tests/data/20mm_cube.obj"
+      - action: wait
+        params:
+          seconds: 2
+      - action: screenshot
+        params:
+          name: "before_slice"
+      - action: click_slice
+        params: {}
+      - action: wait
+        params:
+          seconds: 60
+      - action: screenshot
+        params:
+          name: "after_slice"
+      - action: close_app
+        params: {}
+    enabled: true
+
+  # ==========================================
+  # Tab Navigation Tests (Text-based)
+  # ==========================================
+  - id: "GUI-NAV-001"
+    name: "Switch Tabs"
+    description: "Test switching between Prepare and Preview tabs"
+    tags: ["smoke", "navigation", "gui"]
+    timeout: 120
+    setup: []
+    steps:
+      - action: start_app
+        params: {}
+      - action: wait
+        params:
+          seconds: 5
+      - action: click
+        params:
+          text: "Preview"
+          page: main_window
+      - action: wait
+        params:
+          seconds: 1
+      - action: screenshot
+        params:
+          name: "preview_tab"
+      - action: click
+        params:
+          text: "Prepare"
+          page: main_window
+      - action: wait
+        params:
+          seconds: 1
+      - action: screenshot
+        params:
+          name: "prepare_tab"
+      - action: close_app
+        params: {}
+    enabled: true
+
+  # ==========================================
+  # Keyboard Shortcut Tests
+  # ==========================================
+  - id: "GUI-KEY-001"
+    name: "Select All and Delete"
+    description: "Test Ctrl+A and Delete"
+    tags: ["keyboard", "gui"]
+    timeout: 60
+    setup: []
+    steps:
+      - action: start_app
+        params: {}
+      - action: wait
+        params:
+          seconds: 5
+      - action: add_model
+        params:
+          file: "tests/data/20mm_cube.obj"
+      - action: wait
+        params:
+          seconds: 2
+      - action: hotkey
+        params:
+          keys: ["ctrl", "a"]
+      - action: wait
+        params:
+          seconds: 0.5
+      - action: press_key
+        params:
+          key: delete
+      - action: wait
+        params:
+          seconds: 1
+      - action: screenshot
+        params:
+          name: "after_delete"
+      - action: close_app
+        params: {}
+    enabled: true
+
+  # ==========================================
+  # Menu Tests
+  # ==========================================
+  - id: "GUI-MENU-001"
+    name: "Open File Menu"
+    description: "Test opening File menu via Alt+F"
+    tags: ["menu", "gui"]
+    timeout: 60
+    setup: []
+    steps:
+      - action: start_app
+        params: {}
+      - action: wait
+        params:
+          seconds: 5
+      - action: hotkey
+        params:
+          keys: ["alt", "f"]
+      - action: wait
+        params:
+          seconds: 1
+      - action: screenshot
+        params:
+          name: "file_menu"
+      - action: press_key
+        params:
+          key: escape
+      - action: close_app
+        params: {}
+    enabled: true
+
+  # ==========================================
+  # Complete Workflow Test
+  # ==========================================
+  - id: "GUI-WORKFLOW-001"
+    name: "Complete Slice Workflow"
+    description: "Full workflow: load, slice, preview"
+    tags: ["workflow", "smoke", "gui"]
+    timeout: 180
+    setup: []
+    steps:
+      - action: start_app
+        params: {}
+      - action: wait
+        params:
+          seconds: 5
+      - action: add_model
+        params:
+          file: "tests/data/20mm_cube.obj"
+      - action: wait
+        params:
+          seconds: 2
+      - action: screenshot
+        params:
+          name: "workflow_model_loaded"
+      - action: click_slice
+        params: {}
+      - action: wait
+        params:
+          seconds: 60
+      - action: screenshot
+        params:
+          name: "workflow_slicing_done"
+      - action: click
+        params:
+          text: "Preview"
+          page: main_window
+      - action: wait
+        params:
+          seconds: 2
+      - action: screenshot
+        params:
+          name: "workflow_preview"
+      - action: close_app
+        params: {}
+    enabled: true

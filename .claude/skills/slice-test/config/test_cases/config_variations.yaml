@@ -1,0 +1,157 @@
+# Configuration Variation Tests
+# Tests for different slicing configuration options
+
+test_cases:
+  # Layer Height Variations
+  - id: "CFG-001"
+    name: "Low Layer Height (0.1mm)"
+    description: "Test with fine layer height setting"
+    input: "tests/data/20mm_cube.obj"
+    config: ".claude/skills/slice-test/config/profiles/default_profile.json"
+    tags: ["config", "layer-height", "quality"]
+    timeout: 180
+    config_overrides:
+      layer_height: 0.1
+    expected:
+      return_code: 0
+      gcode_exists: true
+      min_lines: 200
+    enabled: false  # Requires config override support
+
+  - id: "CFG-002"
+    name: "High Layer Height (0.3mm)"
+    description: "Test with coarse layer height setting"
+    input: "tests/data/20mm_cube.obj"
+    tags: ["config", "layer-height", "speed"]
+    timeout: 120
+    config_overrides:
+      layer_height: 0.3
+    expected:
+      return_code: 0
+      gcode_exists: true
+      min_lines: 50
+    enabled: false
+
+  # Infill Variations
+  - id: "CFG-003"
+    name: "100% Infill"
+    description: "Test with 100% infill density"
+    input: "tests/data/20mm_cube.obj"
+    tags: ["config", "infill"]
+    timeout: 300
+    config_overrides:
+      fill_density: "100%"
+    expected:
+      return_code: 0
+      gcode_exists: true
+      min_lines: 200
+    enabled: false
+
+  - id: "CFG-004"
+    name: "0% Infill (Vase Mode)"
+    description: "Test with zero infill"
+    input: "tests/data/20mm_cube.obj"
+    tags: ["config", "infill", "vase"]
+    timeout: 120
+    config_overrides:
+      fill_density: "0%"
+    expected:
+      return_code: 0
+      gcode_exists: true
+      min_lines: 50
+    enabled: false
+
+  # Perimeter Variations
+  - id: "CFG-005"
+    name: "Single Perimeter"
+    description: "Test with minimal perimeters"
+    input: "tests/data/20mm_cube.obj"
+    tags: ["config", "perimeter"]
+    timeout: 120
+    config_overrides:
+      perimeters: 1
+    expected:
+      return_code: 0
+      gcode_exists: true
+      min_lines: 50
+    enabled: false
+
+  - id: "CFG-006"
+    name: "Many Perimeters (6)"
+    description: "Test with many perimeters"
+    input: "tests/data/20mm_cube.obj"
+    tags: ["config", "perimeter"]
+    timeout: 180
+    config_overrides:
+      perimeters: 6
+    expected:
+      return_code: 0
+      gcode_exists: true
+      min_lines: 100
+    enabled: false
+
+  # Speed Variations
+  - id: "CFG-007"
+    name: "Slow Print Speed"
+    description: "Test with reduced print speed"
+    input: "tests/data/20mm_cube.obj"
+    tags: ["config", "speed"]
+    timeout: 300
+    config_overrides:
+      perimeter_speed: 30
+      infill_speed: 40
+    expected:
+      return_code: 0
+      gcode_exists: true
+      min_lines: 50
+    enabled: false
+
+  - id: "CFG-008"
+    name: "Fast Print Speed"
+    description: "Test with increased print speed"
+    input: "tests/data/20mm_cube.obj"
+    tags: ["config", "speed"]
+    timeout: 120
+    config_overrides:
+      perimeter_speed: 100
+      infill_speed: 150
+    expected:
+      return_code: 0
+      gcode_exists: true
+      min_lines: 50
+    enabled: false
+
+  # Support Variations
+  - id: "CFG-009"
+    name: "With Supports"
+    description: "Test model requiring supports"
+    input: "tests/data/overhang.obj"
+    tags: ["config", "support"]
+    timeout: 180
+    config_overrides:
+      support_material: true
+    expected:
+      return_code: 0
+      gcode_exists: true
+      gcode_keywords:
+        - "support"
+      min_lines: 100
+    enabled: false
+
+  # Temperature Variations
+  - id: "CFG-010"
+    name: "High Temperature PLA"
+    description: "Test with higher temperature"
+    input: "tests/data/20mm_cube.obj"
+    tags: ["config", "temperature"]
+    timeout: 120
+    config_overrides:
+      temperature: 230
+      bed_temperature: 70
+    expected:
+      return_code: 0
+      gcode_exists: true
+      gcode_keywords:
+        - "M104 S230"
+        - "M140 S70"
+    enabled: false

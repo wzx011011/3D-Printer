@@ -1,0 +1,118 @@
+# Edge Case and Boundary Condition Tests
+# Tests for unusual inputs and boundary conditions
+
+test_cases:
+  # Extreme Size Tests
+  - id: "EDGE-002"
+    name: "Very Small Model"
+    description: "Test slicing a very small model"
+    input: "tests/data/small_dorito.obj"
+    tags: ["edge", "small", "obj"]
+    timeout: 60
+    expected:
+      return_code: 0
+      gcode_exists: true
+      min_lines: 10
+    enabled: true
+
+  # Orientation Tests
+  - id: "EDGE-003"
+    name: "Upside Down Model"
+    description: "Test model loaded in inverted orientation"
+    input: "tests/data/A_upsidedown.obj"
+    tags: ["edge", "orientation", "obj"]
+    timeout: 120
+    expected:
+      return_code: 0
+      gcode_exists: true
+      min_lines: 50
+    enabled: true
+
+  # Complex Hole Tests
+  - id: "EDGE-004"
+    name: "Standing Concave Hole"
+    description: "Concave hole model in standing orientation"
+    input: "tests/data/cube_with_concave_hole_enlarged_standing.obj"
+    tags: ["edge", "hole", "obj"]
+    timeout: 180
+    expected:
+      return_code: 0
+      gcode_exists: true
+      min_lines: 100
+    enabled: true
+
+  # Multiple Object Tests
+  - id: "EDGE-005"
+    name: "A and V Letter Models"
+    description: "Simple letter shape tests"
+    input: "tests/data/A.obj"
+    tags: ["edge", "letter", "obj"]
+    timeout: 120
+    expected:
+      return_code: 0
+      gcode_exists: true
+      min_lines: 50
+    enabled: true
+
+  - id: "EDGE-006"
+    name: "V Letter Standing"
+    description: "V letter in standing orientation"
+    input: "tests/data/V_standing.obj"
+    tags: ["edge", "letter", "obj"]
+    timeout: 120
+    expected:
+      return_code: 0
+      gcode_exists: true
+      min_lines: 50
+    enabled: true
+
+  # Dimension Tests
+  - id: "EDGE-007"
+    name: "2x20x10 Model"
+    description: "Non-cubic dimensions test"
+    input: "tests/data/2x20x10.obj"
+    tags: ["edge", "dimension", "obj"]
+    timeout: 120
+    expected:
+      return_code: 0
+      gcode_exists: true
+      min_lines: 50
+    enabled: true
+
+  # Regression Tests - Specific issues
+  - id: "REG-001"
+    name: "STL CRLF Line Endings"
+    description: "Ensure CRLF line endings are handled correctly"
+    input: "tests/data/test_stl/ASCII/20mmbox-CRLF.stl"
+    tags: ["regression", "stl", "line-endings"]
+    timeout: 120
+    expected:
+      return_code: 0
+      gcode_exists: true
+      min_lines: 50
+    enabled: true
+
+  - id: "REG-002"
+    name: "STL Non-Standard Line Endings"
+    description: "Test handling of non-standard line endings"
+    input: "tests/data/test_stl/ASCII/20mmbox-nonstandard.stl"
+    tags: ["regression", "stl", "line-endings"]
+    timeout: 120
+    expected:
+      return_code: 0
+      gcode_exists: true
+      min_lines: 50
+    enabled: true
+
+  # 3MF Format Tests
+  - id: "REG-003"
+    name: "Prusa STL (from 3MF test data)"
+    description: "Test Prusa STL compatibility"
+    input: "tests/data/test_3mf/Prusa.stl"
+    tags: ["regression", "stl", "compatibility"]
+    timeout: 120
+    expected:
+      return_code: 0
+      gcode_exists: true
+      min_lines: 50
+    enabled: true

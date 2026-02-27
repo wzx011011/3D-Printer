@@ -1,0 +1,128 @@
+# Complex Model Test Cases
+# These tests validate slicing of more complex geometries
+
+test_cases:
+  # Complex Geometry Tests
+  - id: "COMPLEX-001"
+    name: "Extruder Idler"
+    description: "Real-world mechanical part with complex geometry"
+    input: "tests/data/extruder_idler.obj"
+    tags: ["complex", "obj", "real-world"]
+    timeout: 300
+    expected:
+      return_code: 0
+      gcode_exists: true
+      min_lines: 500
+      max_lines: 100000
+    enabled: true
+
+  - id: "COMPLEX-002"
+    name: "Extruder Idler Quads"
+    description: "Quad mesh version of extruder idler"
+    input: "tests/data/extruder_idler_quads.obj"
+    tags: ["complex", "obj", "quads"]
+    timeout: 300
+    expected:
+      return_code: 0
+      gcode_exists: true
+      min_lines: 500
+    enabled: true
+
+  - id: "COMPLEX-003"
+    name: "Frog Legs"
+    description: "Complex organic shape"
+    input: "tests/data/frog_legs.obj"
+    tags: ["complex", "obj", "organic"]
+    timeout: 300
+    expected:
+      return_code: 0
+      gcode_exists: true
+      min_lines: 500
+    enabled: true
+
+  - id: "COMPLEX-004"
+    name: "iPad Stand"
+    description: "Functional print with multiple features"
+    input: "tests/data/ipadstand.obj"
+    tags: ["complex", "obj", "functional"]
+    timeout: 300
+    expected:
+      return_code: 0
+      gcode_exists: true
+      min_lines: 1000
+    enabled: true
+
+  - id: "COMPLEX-005"
+    name: "Cube with Concave Hole"
+    description: "Test concave features"
+    input: "tests/data/cube_with_concave_hole.obj"
+    tags: ["complex", "obj", "concave"]
+    timeout: 180
+    expected:
+      return_code: 0
+      gcode_exists: true
+      min_lines: 100
+    enabled: true
+
+  - id: "COMPLEX-006"
+    name: "Cube with Concave Hole Enlarged"
+    description: "Enlarged version of concave hole test"
+    input: "tests/data/cube_with_concave_hole_enlarged.obj"
+    tags: ["complex", "obj", "concave"]
+    timeout: 180
+    expected:
+      return_code: 0
+      gcode_exists: true
+      min_lines: 100
+    enabled: true
+
+  - id: "COMPLEX-007"
+    name: "Two Hollow Squares"
+    description: "Multiple objects test"
+    input: "tests/data/two_hollow_squares.obj"
+    tags: ["complex", "obj", "multi-object"]
+    timeout: 180
+    expected:
+      return_code: 0
+      gcode_exists: true
+      min_lines: 100
+    enabled: true
+
+  # Sloping Features
+  - id: "COMPLEX-008"
+    name: "Sloping Hole"
+    description: "Test sloping hole handling"
+    input: "tests/data/sloping_hole.obj"
+    tags: ["complex", "obj", "slope"]
+    timeout: 180
+    expected:
+      return_code: 0
+      gcode_exists: true
+      min_lines: 100
+    enabled: true
+
+  # Simplification Test
+  - id: "COMPLEX-009"
+    name: "Simplification Model"
+    description: "Model for mesh simplification testing"
+    input: "tests/data/simplification.obj"
+    tags: ["complex", "obj", "simplification"]
+    timeout: 180
+    expected:
+      return_code: 0
+      gcode_exists: true
+      min_lines: 100
+    enabled: true
+
+  # Small Detail Test
+  - id: "COMPLEX-010"
+    name: "Small Dorito"
+    description: "Small detailed model"
+    input: "tests/data/small_dorito.obj"
+    tags: ["complex", "obj", "small", "detail"]
+    timeout: 120
+    expected:
+      return_code: 0
+      gcode_exists: true
+      min_lines: 50
+    enabled: true

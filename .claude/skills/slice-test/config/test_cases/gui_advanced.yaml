@@ -1,0 +1,361 @@
+# GUI Advanced Test Cases
+# More complex GUI testing scenarios
+
+gui_test_cases:
+  # ==========================================
+  # Complete Workflow Tests
+  # ==========================================
+  - id: "GUI-WORKFLOW-001"
+    name: "Complete Print Workflow"
+    description: "End-to-end test: load model, adjust settings, slice, preview"
+    tags: ["workflow", "regression", "gui"]
+    timeout: 300
+    setup: []
+    steps:
+      - action: start_app
+        params: {}
+      - action: wait
+        params:
+          seconds: 3
+
+      # Load model
+      - action: add_model
+        params:
+          file: "tests/data/20mm_cube.obj"
+      - action: wait
+        params:
+          seconds: 1
+
+      # Verify model loaded
+      - action: verify_visible
+        params:
+          page: main_window
+          element: canvas
+
+      # Take screenshot before slicing
+      - action: screenshot
+        params:
+          name: "workflow_model_loaded"
+
+      # Slice
+      - action: click_slice
+        params: {}
+      - action: wait_for_slice
+        params:
+          timeout: 180
+
+      # Take screenshot after slicing
+      - action: screenshot
+        params:
+          name: "workflow_slicing_done"
+
+      # Switch to preview
+      - action: switch_to_preview
+        params: {}
+      - action: wait
+        params:
+          seconds: 2
+
+      # Verify preview loaded
+      - action: verify_visible
+        params:
+          page: preview
+          element: layer_slider
+
+      # Final screenshot
+      - action: screenshot
+        params:
+          name: "workflow_complete"
+
+      - action: close_app
+        params: {}
+    enabled: true
+
+  - id: "GUI-WORKFLOW-002"
+    name: "Multiple Models Workflow"
+    description: "Load multiple models and slice"
+    tags: ["workflow", "multi-model", "gui"]
+    timeout: 300
+    setup: []
+    steps:
+      - action: start_app
+        params: {}
+      - action: wait
+        params:
+          seconds: 3
+
+      # Add first model
+      - action: add_model
+        params:
+          file: "tests/data/20mm_cube.obj"
+      - action: wait
+        params:
+          seconds: 1
+
+      # Add second model
+      - action: add_model
+        params:
+          file: "tests/data/pyramid.obj"
+      - action: wait
+        params:
+          seconds: 1
+
+      - action: screenshot
+        params:
+          name: "multiple_models"
+
+      # Slice both
+      - action: click_slice
+        params: {}
+      - action: wait_for_slice
+        params:
+          timeout: 300
+
+      - action: screenshot
+        params:
+          name: "multiple_models_sliced"
+
+      - action: close_app
+        params: {}
+    enabled: true
+
+  # ==========================================
+  # Error Handling Tests
+  # ==========================================
+  - id: "GUI-ERROR-001"
+    name: "Invalid File Handling"
+    description: "Test handling of invalid file path"
+    tags: ["error", "negative", "gui"]
+    timeout: 60
+    setup: []
+    steps:
+      - action: start_app
+        params: {}
+      - action: wait
+        params:
+          seconds: 3
+      - action: hotkey
+        params:
+          keys: ["ctrl", "o"]
+      - action: wait
+        params:
+          seconds: 1
+      - action: type_text
+        params:
+          text: "Z:\\nonexistent\\file.stl"
+      - action: press_key
+        params:
+          key: enter
+      - action: wait
+        params:
+          seconds: 2
+      - action: screenshot
+        params:
+          name: "error_invalid_file"
+      # Dismiss any error dialog
+      - action: press_key
+        params:
+          key: escape
+      - action: close_app
+        params: {}
+    enabled: true
+
+  # ==========================================
+  # Performance Tests
+  # ==========================================
+  - id: "GUI-PERF-001"
+    name: "Large Model Load Time"
+    description: "Test loading a complex model"
+    tags: ["performance", "complex", "gui"]
+    timeout: 120
+    setup: []
+    steps:
+      - action: start_app
+        params: {}
+      - action: wait
+        params:
+          seconds: 3
+      - action: add_model
+        params:
+          file: "tests/data/extruder_idler.obj"
+      - action: wait
+        params:
+          seconds: 5
+      - action: screenshot
+        params:
+          name: "large_model_loaded"
+      - action: close_app
+        params: {}
+    enabled: true
+
+  # ==========================================
+  # Viewport Tests
+  # ==========================================
+  - id: "GUI-VIEW-001"
+    name: "Viewport Mouse Interaction"
+    description: "Test 3D viewport responds to input"
+    tags: ["viewport", "interaction", "gui"]
+    timeout: 60
+    setup: []
+    steps:
+      - action: start_app
+        params: {}
+      - action: wait
+        params:
+          seconds: 3
+      - action: add_model
+        params:
+          file: "tests/data/20mm_cube.obj"
+      - action: wait
+        params:
+          seconds: 1
+      # Simulate mouse interaction via hotkeys
+      - action: hotkey
+        params:
+          keys: ["ctrl", "a"]
+      - action: wait
+        params:
+          seconds: 0.5
+      - action: screenshot
+        params:
+          name: "viewport_selected"
+      - action: close_app
+        params: {}
+    enabled: true
+
+  # ==========================================
+  # UI State Tests
+  # ==========================================
+  - id: "GUI-STATE-001"
+    name: "Button State After Slice"
+    description: "Verify button states change after slicing"
+    tags: ["state", "ui", "gui"]
+    timeout: 180
+    setup: []
+    steps:
+      - action: start_app
+        params: {}
+      - action: wait
+        params:
+          seconds: 3
+      - action: add_model
+        params:
+          file: "tests/data/20mm_cube.obj"
+      - action: screenshot
+        params:
+          name: "state_before_slice"
+      - action: click_slice
+        params: {}
+      - action: wait_for_slice
+        params:
+          timeout: 180
+      - action: screenshot
+        params:
+          name: "state_after_slice"
+      # Preview button should be enabled
+      - action: verify_enabled
+        params:
+          page: main_window
+          element: preview_tab
+      - action: close_app
+        params: {}
+    enabled: true
+
+  # ==========================================
+  # Regression Tests
+  # ==========================================
+  - id: "GUI-REG-001"
+    name: "Slice Cancel Test"
+    description: "Test cancelling a slice operation"
+    tags: ["regression", "cancel", "gui"]
+    timeout: 120
+    setup: []
+    steps:
+      - action: start_app
+        params: {}
+      - action: wait
+        params:
+          seconds: 3
+      - action: add_model
+        params:
+          file: "tests/data/extruder_idler.obj"
+      - action: click_slice
+        params: {}
+      - action: wait
+        params:
+          seconds: 2
+      # Try to cancel (may not always work depending on UI state)
+      - action: cancel_slice
+        params: {}
+      - action: wait
+        params:
+          seconds: 2
+      - action: screenshot
+        params:
+          name: "cancel_slice"
+      - action: close_app
+        params: {}
+    enabled: true
+
+  - id: "GUI-REG-002"
+    name: "Unicode Filename Test"
+    description: "Test loading file with unicode characters"
+    tags: ["regression", "unicode", "gui"]
+    timeout: 120
+    setup: []
+    steps:
+      - action: start_app
+        params: {}
+      - action: wait
+        params:
+          seconds: 3
+      - action: add_model
+        params:
+          file: "tests/data/test_stl/Geräte/20mmbox-čřšřěá.stl"
+      - action: wait
+        params:
+          seconds: 2
+      - action: screenshot
+        params:
+          name: "unicode_file_loaded"
+      - action: close_app
+        params: {}
+    enabled: true
+
+  # ==========================================
+  # Accessibility Tests
+  # ==========================================
+  - id: "GUI-ACCESS-001"
+    name: "Tab Navigation"
+    description: "Test keyboard tab navigation through UI"
+    tags: ["accessibility", "keyboard", "gui"]
+    timeout: 60
+    setup: []
+    steps:
+      - action: start_app
+        params: {}
+      - action: wait
+        params:
+          seconds: 3
+      # Tab through UI elements
+      - action: press_key
+        params:
+          key: tab
+      - action: wait
+        params:
+          seconds: 0.2
+      - action: press_key
+        params:
+          key: tab
+      - action: wait
+        params:
+          seconds: 0.2
+      - action: press_key
+        params:
+          key: tab
+      - action: screenshot
+        params:
+          name: "tab_navigation"
+      - action: close_app
+        params: {}
+    enabled: true
