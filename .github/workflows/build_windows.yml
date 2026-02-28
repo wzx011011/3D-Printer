@@ -2,9 +2,8 @@ name: Build Windows
 
 on:
   push:
-    branches: [ master, main, release-* ]
-  pull_request:
-    branches: [ master, main ]
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 env:
