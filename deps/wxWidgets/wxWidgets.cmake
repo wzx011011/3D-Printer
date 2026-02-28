@@ -65,3 +65,14 @@ orcaslicer_add_cmake_project(
 if (MSVC)
     add_debug_dep(dep_wxWidgets)
 endif ()
+
+# For MSVC: Copy the actual setup.h from lib directory to include/wx/setup.h
+# This is needed because platform.h includes "wx/setup.h"
+if (MSVC)
+    ExternalProject_Add_Step(dep_wxWidgets create_msvc_setup_h
+        DEPENDEES install
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${DESTDIR}/lib/vc_x64_lib/mswu/wx/setup.h"
+            "${DESTDIR}/include/wx/setup.h"
+    )
+endif()
