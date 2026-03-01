@@ -65,7 +65,7 @@ jobs:
         cmake --build . --target install --config ${{ env.BUILD_TYPE }}
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: CrealityPrint-Windows
         path: build/CrealityPrint/
