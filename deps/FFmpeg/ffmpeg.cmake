@@ -85,15 +85,18 @@ ExternalProject_Add(
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
     INSTALL_COMMAND
-        ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/installed/x64-windows/include/libavdevice   ${DESTDIR}/include/libavdevice
+        ${CMAKE_COMMAND} -E make_directory ${DESTDIR}/include/
+        COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/installed/x64-windows/include/libavdevice   ${DESTDIR}/include/libavdevice
         COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/installed/x64-windows/include/libavfilter    ${DESTDIR}/include/libavfilter
         COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/installed/x64-windows/include/libavformat   ${DESTDIR}/include/libavformat
         COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/installed/x64-windows/include/libavutil     ${DESTDIR}/include/libavutil
         COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/installed/x64-windows/include/libswresample ${DESTDIR}/include/libswresample
         COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/installed/x64-windows/include/libswscale    ${DESTDIR}/include/libswscale
         COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/installed/x64-windows/include/libavcodec   ${DESTDIR}/include/libavcodec
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${DESTDIR}/lib/
         COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/installed/x64-windows/lib                   ${DESTDIR}/lib
         COMMAND ${CMAKE_COMMAND} -E remove ${DESTDIR}/lib/libpng16.lib
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${DESTDIR}/bin/ffmpeg/
         COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/installed/x64-windows/bin                   ${DESTDIR}/bin/ffmpeg
 )
 endif()

@@ -1,5 +1,6 @@
 #
 # This CMake project downloads, configures and builds OrcaSlicer dependencies on Unix and Windows.
+# v1.0.2 - Force rebuild to fix FFmpeg include layout
 #
 # When using this script, it's recommended to perform an out-of-source build using CMake.
 #
