@@ -1,0 +1,89 @@
+on:
+  workflow_call:
+    inputs:
+      cache-key:
+        required: true
+        type: string
+      cache-path:
+        required: true
+        type: string
+      valid-cache:
+        required: true
+        type: boolean
+      os:
+        required: true
+        type: string
+      arch:
+        required: false
+        type: string
+      build-deps-only:
+        required: false
+        type: boolean
+
+jobs:
+  build_deps:
+    name: Build Deps
+    if: inputs.build-deps-only || inputs.valid-cache != true
+    # if: true
+    runs-on: ${{ inputs.os }}
+    env:
+      date:
+    steps:
+
+      # Setup the environment
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: 'true'
+
+      - name: load cached deps
+        uses: actions/cache@v4
+        with:
+          path: ${{ inputs.cache-path }}
+          key: ${{ inputs.cache-key }}
+
+      - uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: "~3.28.0"  # use most recent 3.28.x version
+
+      # Build Dependencies
+      - name: Build on Windows
+        if: inputs.os == 'windows-latest'
+        working-directory: ${{ github.workspace }}
+        run: |
+            choco install strawberryperl
+            .\test_build.bat deps
+            .\test_build.bat pack
+            cd ${{ github.workspace }}/deps/build
+
+      # Pack the built deps as OrcaSlicer_dep_windows.zip (without renaming,
+      # so the cache path deps/build/OrcaSlicer_dep is preserved for the
+      # slicer build job that follows).
+      - name: Pack deps artifact (Windows)
+        if: inputs.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          Set-Location "${{ github.workspace }}\deps\build"
+          & "${{ github.workspace }}\tools\7z.exe" a OrcaSlicer_dep_windows.zip OrcaSlicer_dep
+          $size = [math]::Round((Get-Item OrcaSlicer_dep_windows.zip).Length / 1MB, 1)
+          Write-Host "Packed OrcaSlicer_dep_windows.zip ($size MB)"
+
+      - name: Upload deps artifact
+        if: inputs.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: OrcaSlicer-deps-windows-${{ github.run_number }}
+          path: ${{ github.workspace }}/deps/build/OrcaSlicer_dep_windows.zip
+          retention-days: 30
+
+  build_creality_print:
+    name: Build Creality Print
+    needs: [build_deps]
+    if: ${{ !cancelled() && !inputs.build-deps-only && (inputs.valid-cache == true && needs.build_deps.result == 'skipped') || (inputs.valid-cache != true && success()) }}
+    uses: ./.github/workflows/build_creality_print.yml
+    with:
+      cache-key: ${{ inputs.cache-key }}
+      cache-path: ${{ inputs.cache-path }}
+      os: ${{ inputs.os }}
+      arch: ${{ inputs.arch }}
+    secrets: inherit

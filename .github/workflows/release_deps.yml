@@ -1,0 +1,78 @@
+name: Release Prebuilt Deps
+
+# Triggered when deps/ changes on main/master, or manually.
+# Builds deps from source, packs as OrcaDepsLib.zip (with dep_Release/ root),
+# and publishes/updates the rolling GitHub Release tag "deps-prebuilt-latest".
+# Local scripts (extract_deps.bat / orca_build_release.bat) can then download
+# from GitHub instead of the internal 172.20.180.14 server.
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'deps/**'
+  workflow_dispatch:
+
+jobs:
+  release_deps_windows:
+    name: Build & Release Windows Deps (x64, VS2022)
+    runs-on: windows-latest
+    permissions:
+      contents: write   # needed to create/update GitHub Releases
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: 'true'
+
+      - name: Setup CMake
+        uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: "~3.28.0"
+
+      # OpenSSL's build system requires a Perl interpreter on Windows
+      - name: Install Perl (required by OpenSSL)
+        run: choco install strawberryperl
+
+      # Build all deps from source -> deps/build/OrcaSlicer_dep/usr/local/
+      - name: Build Release deps
+        run: .\test_build.bat deps
+
+      # Rename OrcaSlicer_dep -> dep_Release so that extract_deps.bat can
+      # unzip and immediately use dep_Release/ at the workspace root, which
+      # is the path expected by orca_build_release.bat.
+      - name: Pack OrcaDepsLib.zip
+        shell: pwsh
+        run: |
+          $buildDir = "${{ github.workspace }}\deps\build"
+          Rename-Item -Path "$buildDir\OrcaSlicer_dep" -NewName "dep_Release"
+          Set-Location $buildDir
+          & "${{ github.workspace }}\tools\7z.exe" a OrcaDepsLib.zip dep_Release
+          $size = [math]::Round((Get-Item OrcaDepsLib.zip).Length / 1MB, 1)
+          Write-Host "Packed OrcaDepsLib.zip ($size MB)"
+
+      # Create the rolling release tag if it doesn't exist, then upload/replace the asset.
+      # Using --clobber so re-runs always keep the latest build.
+      - name: Publish to GitHub Release (deps-prebuilt-latest)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          $repo = "${{ github.repository }}"
+          $tag  = "deps-prebuilt-latest"
+          $zip  = "${{ github.workspace }}\deps\build\OrcaDepsLib.zip"
+
+          # Create the release if it doesn't already exist
+          $exists = gh release view $tag --repo $repo 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag `
+              --repo $repo `
+              --title "Prebuilt Dependencies (Windows x64, VS2022)" `
+              --notes "Auto-generated prebuilt static deps for Windows x64 (VS2022, Release). Updated automatically whenever deps/ changes." `
+              --prerelease
+          }
+
+          # Upload (or replace) the asset
+          gh release upload $tag $zip --repo $repo --clobber
+          Write-Host "Published $zip to release $tag"
