@@ -417,6 +417,7 @@ else()
         ${ZLIB_PKG}
         ${EXPAT_PKG}
         dep_OSS
+        dep_FFmpeg
         dep_Assimp
         dep_MQTTC
         dep_MQTT
