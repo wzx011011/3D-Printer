@@ -21,7 +21,7 @@ find_path(FFMPEG_INCLUDE_DIR
         /opt/local/include
         "C:/msys64/mingw64/include"
         "C:/msys64/usr/include"
-        "$CMAKE_PREFIX_PATH/include"
+        "${CMAKE_PREFIX_PATH}/include"
     PATH_SUFFIXES ffmpeg
     DOC "FFmpeg 头文件目录"
 )
@@ -44,7 +44,7 @@ foreach(COMPONENT ${FFMPEG_COMPONENTS})
             /opt/local/lib
             "C:/msys64/mingw64/lib"
             "C:/msys64/usr/lib"
-            "$CMAKE_PREFIX_PATH/lib"
+            "${CMAKE_PREFIX_PATH}/lib"
         PATH_SUFFIXES ffmpeg
         DOC "FFmpeg ${COMPONENT} 库路径"
     )

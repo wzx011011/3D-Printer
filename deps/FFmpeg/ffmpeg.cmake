@@ -73,27 +73,27 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 endif()
 if(WIN32)
 set(DOWNLOAD_URL "https://github.com/mcmtroffaes/ffmpeg-msvc-build/releases/download/20211207.0.0/ffmpeg-2021-12-07-0-lgpl21-x64-windows.7z")
+# Use INSTALL_COMMAND with multiple COMMAND entries instead of add_custom_command
+# POST_BUILD, because ExternalProject targets with an empty BUILD_COMMAND do not
+# reliably fire POST_BUILD hooks in the Visual Studio generator.
 ExternalProject_Add(
     dep_FFmpeg
     URL ${DOWNLOAD_URL}
     URL_HASH SHA256=acc0abeee5e8fa6f214fdba0f47987784a19a68fee018386abcb6f9be5138cc7
     DOWNLOAD_DIR ${DEP_DOWNLOAD_DIR}/FFmpeg
-    DOWNLOAD_NO_EXTRACT 0 # 自动解压文件
+    DOWNLOAD_NO_EXTRACT 0 # auto-extract
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
-    INSTALL_COMMAND ""
-)
-ExternalProject_Get_Property(dep_FFmpeg SOURCE_DIR)
-add_custom_command(TARGET dep_FFmpeg POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${SOURCE_DIR}/installed/x64-windows/include/libavdevice ${DESTDIR}/include/libavdevice
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${SOURCE_DIR}/installed/x64-windows/include/libavfilter ${DESTDIR}/include/libavfilter
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${SOURCE_DIR}/installed/x64-windows/include/libavformat ${DESTDIR}/include/libavformat
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${SOURCE_DIR}/installed/x64-windows/include/libavutil ${DESTDIR}/include/libavutil
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${SOURCE_DIR}/installed/x64-windows/include/libswresample ${DESTDIR}/include/libswresample
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${SOURCE_DIR}/installed/x64-windows/include/libswscale ${DESTDIR}/include/libswscale
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${SOURCE_DIR}/installed/x64-windows/include/libavcodec ${DESTDIR}/include/libavcodec
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${SOURCE_DIR}/installed/x64-windows/lib ${DESTDIR}/lib
-    COMMAND ${CMAKE_COMMAND} -E remove ${DESTDIR}/lib/libpng16.lib
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${SOURCE_DIR}/installed/x64-windows/bin ${DESTDIR}/bin/ffmpeg
+    INSTALL_COMMAND
+        ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/installed/x64-windows/include/libavdevice   ${DESTDIR}/include/libavdevice
+        COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/installed/x64-windows/include/libavfilter    ${DESTDIR}/include/libavfilter
+        COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/installed/x64-windows/include/libavformat   ${DESTDIR}/include/libavformat
+        COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/installed/x64-windows/include/libavutil     ${DESTDIR}/include/libavutil
+        COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/installed/x64-windows/include/libswresample ${DESTDIR}/include/libswresample
+        COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/installed/x64-windows/include/libswscale    ${DESTDIR}/include/libswscale
+        COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/installed/x64-windows/include/libavcodec   ${DESTDIR}/include/libavcodec
+        COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/installed/x64-windows/lib                   ${DESTDIR}/lib
+        COMMAND ${CMAKE_COMMAND} -E remove ${DESTDIR}/lib/libpng16.lib
+        COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/installed/x64-windows/bin                   ${DESTDIR}/bin/ffmpeg
 )
 endif()
