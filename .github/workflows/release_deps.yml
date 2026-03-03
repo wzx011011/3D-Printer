@@ -8,9 +8,8 @@ name: Release Prebuilt Deps
 
 on:
   push:
-    branches: [main, master]
-    paths:
-      - 'deps/**'
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 jobs:

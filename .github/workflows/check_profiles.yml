@@ -1,26 +1,10 @@
 name: Check profiles
-on: 
-  push:
-    branches: 
-    - main
-    - master 
-    - windows
-    paths:
-    - 'resources/profiles/**'
-    - ".github/workflows/check_profiles.yml"
-  pull_request:
-    branches: 
-    - main
-    - master 
-    paths:
-    - 'resources/profiles/**'
-    - ".github/workflows/check_profiles.yml"
-
+on:
   workflow_dispatch:
     inputs:
       logLevel:
-        description: 'Log level'     
-        required: true
+        description: 'Log level'
+        required: false
         default: 'warning'
 
 
