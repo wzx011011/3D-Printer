@@ -76,7 +76,7 @@ ButtonsCtrl::ButtonsCtrl(wxWindow* parent, wxBoxSizer* side_tools)
     this->SetSizer(m_sizer);
 
     if (side_tools != NULL) {
-       // m_sizer->AddStretchSpacer(1);
+        m_sizer->AddStretchSpacer(1);
         for (size_t idx = 0; idx < side_tools->GetItemCount(); idx++) {
             wxSizerItem* item     = side_tools->GetItem(idx);
             wxWindow*    item_win = item->GetWindow();
@@ -645,7 +645,7 @@ void BBLTopbar::Init(wxFrame* parent)
     m_calib_item->SetDisabledBitmap(calib_bitmap_inactive);*/
 
     addDipSpacer(10);
-    this->AddStretchSpacer(4);
+    this->AddStretchSpacer(1);
     //CX
     ButtonsCtrl* pCtr = new ButtonsCtrl(this);
     pCtr->InsertPage(MainFrame::tpOnlineModel, _L("Online Models"), 0);
@@ -1138,6 +1138,15 @@ void BBLTopbar::OnConfigRelate(wxAuiToolBarEvent& evt)
 void BBLTopbar::OnLogo(wxAuiToolBarEvent& evt) 
 { 
 #if CUSTOM_CXCLOUD
+    if (evt.GetId() == ID_LOGO) {
+        AnalyticsEventPayload payload;
+        payload.type = AnalyticsDataEventType::ANALYTICS_TAB_HOME;
+        AnalyticsDataUploadManager::getInstance().triggerUploadTasksWithPayload(
+            AnalyticsUploadTiming::ON_CLICK_START_PRINT_CMD,
+            payload,
+            0,
+            "");
+    }
     wxAuiToolBarItem* item = this->FindTool(ID_LOGO);
     item->SetUserData(HOME_BTN_CODE_CHECKED);
     item->SetState(wxAUI_BUTTON_STATE_CHECKED);
@@ -1156,13 +1165,14 @@ void BBLTopbar::OnLogin(wxAuiToolBarEvent& evt) {}
 
 void BBLTopbar::OnFeedback(wxAuiToolBarEvent& evt)
 {
-    //try {
-    //    // Test the recommended goods interface via feedback button
-    //    wxGetApp().OpenEshopRecommendedGoods("#000000", "PLA", "Hyper PLA");
-    //    return;
-    //} catch (...) {
-    //    // fall through to default feedback page
-    //}
+    AnalyticsEventPayload payload;
+    payload.type = AnalyticsDataEventType::ANALYTICS_GOTO_SUPPORT;
+    payload.data["entry"] = "toolbar";
+    AnalyticsDataUploadManager::getInstance().triggerUploadTasksWithPayload(
+        AnalyticsUploadTiming::ON_CLICK_START_PRINT_CMD,
+        payload,
+        0,
+        "");
     AnalyticsDataUploadManager::uploadSlice822ClickEvent("user_feedback",2);
     try {
         wxLaunchDefaultBrowser(user_feedback_website(), wxBROWSER_NEW_WINDOW);
@@ -1202,8 +1212,8 @@ wxMenu* BBLTopbar::GetCalibMenu()
 
 void BBLTopbar::SetTitle(wxString title)
 {
-    return UpdateFileNameDisplay(title);
-    /*
+    //return UpdateFileNameDisplay(title);
+    
 
     wxGCDC dc(this);
     wxString newTitle = wxControl::Ellipsize(title, dc, wxELLIPSIZE_END, TOPBAR_TITLE_WIDTH - FromDIP(30));
@@ -1221,7 +1231,7 @@ void BBLTopbar::SetTitle(wxString title)
     }
 
 
-    */
+    
 }
 
 void BBLTopbar::SetMaximizedSize()
@@ -1582,7 +1592,7 @@ wxAuiToolBarItem* BBLTopbar::FindToolByCurrentPosition()
 
 void BBLTopbar::UpdateFileNameDisplay()
 {
-    UpdateFileNameDisplay(m_displayName);
+    //UpdateFileNameDisplay(m_displayName);
 }
 
 wxString BBLTopbar::TruncateTextToWidth(const wxString& text, int maxWidth, Label* label)
@@ -1590,16 +1600,13 @@ wxString BBLTopbar::TruncateTextToWidth(const wxString& text, int maxWidth, Labe
     if (text.IsEmpty() || maxWidth <= 0 || !label)
         return text;
 
-    // 获取当前Label的字体和DC（设备上下文，用于计算文字宽度）
     wxClientDC dc(label);
     dc.SetFont(label->GetFont());
 
-    // 如果文字本身宽度小于最大宽度，直接返回
     wxSize textSize = dc.GetTextExtent(text);
     if (textSize.x <= maxWidth)
         return text;
 
-    // 否则，使用Ellipsize函数进行截断
     wxString truncated = wxControl::Ellipsize(text, dc, wxELLIPSIZE_END, maxWidth - FromDIP(30));
 
     return truncated;

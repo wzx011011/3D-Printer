@@ -15,6 +15,7 @@
 #include "GLCanvas3D.hpp"
 #include "Plater.hpp"
 #include "Camera.hpp"
+#include "CrealityBedModelMapping.hpp"
 
 #include <GL/glew.h>
 #include <array>
@@ -284,10 +285,22 @@ bool Bed3D::set_shape(const Pointfs& printable_area, const double printable_heig
         model_filename.clear();
     }
 
+    const Vec3d new_bed_model_scale = calc_bed_model_scale(printable_area, model_filename);
+
     //BBS: add position related logic
-    if (m_bed_shape == printable_area && m_build_volume.printable_height() == printable_height && m_type == type && m_model_filename == model_filename && position == m_position)
+    const bool core_unchanged =
+        (m_bed_shape == printable_area && m_build_volume.printable_height() == printable_height && m_type == type &&
+         m_model_filename == model_filename && position == m_position);
+    const bool scale_changed = !m_bed_model_scale.isApprox(new_bed_model_scale);
+    if (core_unchanged && !scale_changed) {
         // No change, no need to update the UI.
         return false;
+    }        
+    if (core_unchanged && scale_changed) {
+        m_bed_model_scale = new_bed_model_scale;
+        const_cast<BoundingBoxf3&>(m_extended_bounding_box) = calc_extended_bounding_box();
+        return false;
+    }
 
     //BBS: add part plate logic, apply position to bed shape
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(":current position {%1%,%2%}, new position {%3%, %4%}") % m_position.x() % m_position.y() % position.x() % position.y();
@@ -306,6 +319,7 @@ bool Bed3D::set_shape(const Pointfs& printable_area, const double printable_heig
     m_type = type;
     //m_texture_filename = texture_filename;
     m_model_filename = model_filename;
+    m_bed_model_scale = new_bed_model_scale;
 
     // Set the origin and size for rendering the coordinate system axes.
     m_axes.set_origin({ 0.0, 0.0, static_cast<double>(GROUND_Z) });
@@ -314,6 +328,7 @@ bool Bed3D::set_shape(const Pointfs& printable_area, const double printable_heig
     {
         m_type       = Type::Custom;
         m_model_filename.clear();
+        m_bed_model_scale = Vec3d::Ones();
         scale_factor = 200.0f / m_build_volume.bounding_volume().max_size() * 0.1f;
     }
     m_axes.set_stem_length(scale_factor * static_cast<float>(m_build_volume.bounding_volume().max_size()));
@@ -358,7 +373,7 @@ bool Bed3D::set_gcode_shape(const Pointfs& printable_area,  const double printab
     };
 
     Type        type    = Type::System;
-    std::string model   = PresetUtils::system_printer_bed_model(*preset);
+    std::string model   = CrealityBedModelMapping::bed_model_path_for_preset(*preset);
     std::string texture = PresetUtils::system_printer_bed_texture(*preset);
 
     m_is_gcode = true;
@@ -376,11 +391,20 @@ bool Bed3D::set_gcode_shape(const Pointfs& printable_area,  const double printab
         model_filename.clear();
     }
 
+    const Vec3d new_bed_model_scale = calc_bed_model_scale(printable_area, model_filename);
+
     // BBS: add position related logic
-    if (m_bed_shape == printable_area && m_build_volume.printable_height() == printable_height && m_type == type &&
-        m_model_filename == model_filename && position == m_position)
-        // No change, no need to update the UI.
+    const bool core_unchanged =
+        (m_bed_shape == printable_area && m_build_volume.printable_height() == printable_height && m_type == type &&
+         m_model_filename == model_filename && position == m_position);
+    const bool scale_changed = !m_bed_model_scale.isApprox(new_bed_model_scale);
+    if (core_unchanged && !scale_changed)
         return false;
+    if (core_unchanged && scale_changed) {
+        m_bed_model_scale = new_bed_model_scale;
+        const_cast<BoundingBoxf3&>(m_extended_bounding_box) = calc_extended_bounding_box();
+        return false;
+    }
 
     // BBS: add part plate logic, apply position to bed shape
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__
@@ -400,6 +424,7 @@ bool Bed3D::set_gcode_shape(const Pointfs& printable_area,  const double printab
     m_type = type;
     // m_texture_filename = texture_filename;
     m_model_filename = model_filename;
+    m_bed_model_scale    = new_bed_model_scale;
     // BBS: add part plate logic
     m_extended_bounding_box = this->calc_extended_bounding_box(false);
 
@@ -423,6 +448,7 @@ bool Bed3D::set_gcode_shape(const Pointfs& printable_area,  const double printab
     if (wxGetApp().preset_bundle->machine_is_belt()) {
         m_type = Type::Custom;
         m_model_filename.clear();
+        m_bed_model_scale = Vec3d::Ones();
         scale_factor = 200.0f / m_build_volume.bounding_volume().max_size() * 0.1f;
     }
     m_axes.set_stem_length(scale_factor * static_cast<float>(m_build_volume.bounding_volume().max_size()));
@@ -513,6 +539,13 @@ BoundingBoxf3 Bed3D::calc_extended_bounding_box(bool consider_model_offset) cons
         // extend to contain model, if any
         BoundingBoxf3 model_bb = m_model.get_bounding_box();
         if (model_bb.defined) {
+            // m_model is rendered with an additional scale (e.g. some Creality legacy buildplate models).
+            model_bb.min.x() *= m_bed_model_scale.x();
+            model_bb.min.y() *= m_bed_model_scale.y();
+            model_bb.min.z() *= m_bed_model_scale.z();
+            model_bb.max.x() *= m_bed_model_scale.x();
+            model_bb.max.y() *= m_bed_model_scale.y();
+            model_bb.max.z() *= m_bed_model_scale.z();
             model_bb.translate(m_model_offset);
             out.merge(model_bb);
         }
@@ -531,11 +564,10 @@ std::tuple<Bed3D::Type, std::string, std::string> Bed3D::detect_type(const Point
             if (curr->config.has("printable_area")) {
                 std::string texture_filename, model_filename;
                 if (shape == dynamic_cast<const ConfigOptionPoints*>(curr->config.option("printable_area"))->values) {
-                    if (curr->is_system)
-                        model_filename = PresetUtils::system_printer_bed_model(*curr);
-                    else {
-                        auto *printer_model = curr->config.opt<ConfigOptionString>("printer_model");
-                        if (printer_model != nullptr && ! printer_model->value.empty()) {
+                    model_filename = CrealityBedModelMapping::bed_model_path_for_preset(*curr);
+                    if (model_filename.empty()) {
+                        auto* printer_model = curr->config.opt<ConfigOptionString>("printer_model");
+                        if (printer_model != nullptr && !printer_model->value.empty()) {
                             model_filename = bundle->get_stl_model_for_printer_model(printer_model->value);
                         }
                     }
@@ -797,41 +829,7 @@ void Bed3D::render_model(const Transform3d& view_matrix, const Transform3d& proj
         // Theme-aware emission to balance contrast
         float emission = m_is_dark ? 0.0f : 0.2f;
         shader->set_uniform("emission_factor", emission);
-        auto  bed_ext                  = get_extents(m_bed_shape);
-        Vec3d scale                    = Vec3d::Ones();
-        // For certain Creality printers, dedicated buildplate STL already has the correct size.
-        bool has_native_scale_model = false;
-        {
-            const std::string& fname = m_model_filename;
-            if (!fname.empty()) {
-                static const std::array<const char*, 4> kCrealityNativeModels = {
-                    "Creality F022_buildplate_model.stl",
-                    "Creality K2_buildplate_model.stl",
-                    "Creality K2 Pro_buildplate_model.stl",
-                    "Creality K2 Plus_buildplate_model.stl"
-                };
-                for (const char* suffix : kCrealityNativeModels) {
-                    if (boost::algorithm::iends_with(fname, suffix)) {
-                        has_native_scale_model = true;
-                        break;
-                    }
-                }
-            }
-        }
-        if (!has_native_scale_model) {
-            if (!m_is_gcode) {
-                if (wxGetApp().preset_bundle->get_current_vendor_type() == VendorType::Creality) {
-                    scale(0) = bed_ext.size()(0) / 220.0;
-                    scale(1) = bed_ext.size()(1) / 220.0;
-                }
-            } else {
-                if (m_vendor == Vendor::Creality) {
-                    scale(0) = bed_ext.size()(0) / 220.0;
-                    scale(1) = bed_ext.size()(1) / 220.0;
-                }
-            }
-        }
-        const Transform3d model_matrix = Geometry::assemble_transform(m_model_offset, Vec3d::Zero(), scale);
+        const Transform3d model_matrix = Geometry::assemble_transform(m_model_offset, Vec3d::Zero(), m_bed_model_scale);
         shader->set_uniform("view_model_matrix", view_matrix * model_matrix);
         shader->set_uniform("projection_matrix", projection_matrix);
         const Matrix3d view_normal_matrix = view_matrix.matrix().block(0, 0, 3, 3) *
@@ -892,6 +890,32 @@ void Bed3D::render_default(bool bottom, const Transform3d& view_matrix, const Tr
 
         shader->stop_using();
     }
+}
+
+Vec3d Bed3D::calc_bed_model_scale(const Pointfs& printable_area, const std::string& bed_model_filename) const
+{
+    if (bed_model_filename.empty())
+        return Vec3d::Ones();
+
+    bool is_creality_vendor = false;
+    if (!m_is_gcode) {
+        PresetBundle* bundle = wxGetApp().preset_bundle;
+        is_creality_vendor   = (bundle != nullptr && bundle->get_current_vendor_type() == VendorType::Creality);
+    } else {
+        is_creality_vendor = (m_vendor == Vendor::Creality);
+    }
+
+    if (!is_creality_vendor)
+        return Vec3d::Ones();
+
+    if (CrealityBedModelMapping::bed_model_has_native_scale(bed_model_filename))
+        return Vec3d::Ones();
+
+    auto  bed_ext = get_extents(printable_area);
+    Vec3d scale   = Vec3d::Ones();
+    scale(0)      = bed_ext.size()(0) / 220.0;
+    scale(1)      = bed_ext.size()(1) / 220.0;
+    return scale;
 }
 
 // BBS: remove the bed picking logic

@@ -127,24 +127,25 @@ public:
 
 	void Popup(wxPoint position = wxDefaultPosition);
 	void Dismiss();
-    void sys_color_changed();
-    void setFilamentItem(FilamentItem* pFilamentItem) { m_pFilamentItem = pFilamentItem; }
+    void msw_rescale();
+	    void sys_color_changed();
+	    void setFilamentItem(FilamentItem* pFilamentItem) { m_pFilamentItem = pFilamentItem; }
 	void on_left_down(wxMouseEvent &evt);
-    void OnPaint(wxPaintEvent& event);
+	    void OnPaint(wxPaintEvent& event);
 
 public:
 
 	Slic3r::GUI::PlaterPresetComboBox* m_filamentCombox;
-    ScalableButton* m_img_extruderTemp;
-    ScalableButton* m_img_bedTemp;
-    Label*                             m_lb_extruderTemp = nullptr;
-    Label*                             m_lb_bedTemp      = nullptr;
+	ScalableButton* m_img_extruderTemp;
+	ScalableButton* m_img_bedTemp;
+	Label*                             m_lb_extruderTemp = nullptr;
+	    Label*                             m_lb_bedTemp      = nullptr;
 
-    ScalableButton* m_edit_btn;
+	    ScalableButton* m_edit_btn;
 	wxColour m_bg_color;
 	wxBoxSizer* m_sizer_main{ nullptr };
-    int	m_index=-1;
-    FilamentItem*   m_pFilamentItem = nullptr;
+	    int	m_index=-1;
+	    FilamentItem*   m_pFilamentItem = nullptr;
 };
 
 const wxColour MENU_COLORS[8] = {

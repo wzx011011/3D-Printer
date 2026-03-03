@@ -4473,7 +4473,25 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
 	// use for gcode preview lod, if wipe_tower_no_sparse_layers == true, to disable lod
     {
         const bool no_sparse = print.config().wipe_tower_no_sparse_layers.value;
-		file.write_format("; should_enable_preview_lod = %d\n", (!no_sparse) ? 1 : 0);
+
+		bool has_support = false;
+        bool has_adaptive_layer_height = false;
+		for (const PrintObject* print_object : print.objects()) 
+		{
+			if (print_object->has_support()) {
+                has_support = true;
+                break;
+            }
+			
+            if (print_object->model_object()->layer_height_profile.empty() == false) {
+                has_adaptive_layer_height = true;
+                break;
+            }
+		}
+
+		bool enable = (!no_sparse) && (!has_support) && (!has_adaptive_layer_height);
+
+		file.write_format("; should_enable_preview_lod = %d\n", enable ? 1 : 0);
 	}
 
       file.write("; CONFIG_BLOCK_END\n\n");
@@ -5600,10 +5618,29 @@ std::string GCode::generate_skirt(const Print&                     print,
                                   const Point&                     offset,
                                   const LayerTools&                layer_tools,
                                   const Layer&                     layer,
-                                  unsigned int                     extruder_id)
+                                  unsigned int                     extruder_id,
+                                  const PrintObject*               object_for_brim)
 {
     bool        first_layer = (layer.id() == 0 && abs(layer.bottom_z()) < EPSILON);
     std::string gcode;
+    const bool  trim_first_layer = first_layer &&
+        print.config().draft_shield != DraftShield::dsDisabled &&
+        print.config().skirt_type == stPerObject &&
+        object_for_brim != nullptr;
+    Polygons    brim_polys;
+    if (trim_first_layer) {
+        auto append_brim_polys = [&brim_polys](const ExtrusionEntityCollection& brim) {
+            brim.polygons_covered_by_width(brim_polys, float(SCALED_EPSILON));
+        };
+        if (auto it = print.m_brimMap.find(object_for_brim->id()); it != print.m_brimMap.end() && !it->second.empty())
+            append_brim_polys(it->second);
+        if (auto it = print.m_supportBrimMap.find(object_for_brim->id()); it != print.m_supportBrimMap.end() && !it->second.empty())
+            append_brim_polys(it->second);
+        if (!brim_polys.empty()) {
+            for (Polygon &poly : brim_polys)
+                poly.translate(-offset.x(), -offset.y());
+        }
+    }
     // Extrude skirt at the print_z of the raft layers and normal object layers
     // not at the print_z of the interlaced support material layers.
     // Map from extruder ID to <begin, end> index of skirt loops to be extruded with that extruder.
@@ -5633,7 +5670,18 @@ std::string GCode::generate_skirt(const Print&                     print,
             //    this->set_last_pos(Skirt::find_start_point(loop, layer.object()->config().skirt_start_angle));
 
             // FIXME using the support_speed of the 1st object printed.
-            gcode += this->extrude_loop(loop, "skirt", m_config.support_speed.value);
+            if (trim_first_layer && !brim_polys.empty()) {
+                Polylines clipped = diff_pl(loop.as_polyline(), brim_polys);
+                for (Polyline &polyline : clipped) {
+                    if (polyline.size() < 2)
+                        continue;
+                    ExtrusionPath path = loop.paths.front();
+                    path.polyline = std::move(polyline);
+                    gcode += this->extrude_path(std::move(path), "skirt", m_config.support_speed.value);
+                }
+            } else {
+                gcode += this->extrude_loop(loop, "skirt", m_config.support_speed.value);
+            }
             if (!first_layer)
                 break;
         }
@@ -6334,7 +6382,8 @@ LayerResult GCode::process_layer(
                     m_skirt_done.erase(m_skirt_done.begin() + 1, m_skirt_done.end());
 
                 const Point& offset = instance_to_print.print_object.instances()[instance_to_print.instance_id].shift;
-                gcode += generate_skirt(print, instance_to_print.print_object.object_skirt(), offset, layer_tools, layer, extruder_id);
+                gcode += generate_skirt(print, instance_to_print.print_object.object_skirt(), offset, layer_tools, layer, extruder_id,
+                                        &instance_to_print.print_object);
             }
         }
 
@@ -6350,7 +6399,8 @@ LayerResult GCode::process_layer(
                     if (first_layer)
                         m_skirt_done.clear();
                     const Point& offset = instance_to_print.print_object.instances()[instance_to_print.instance_id].shift;
-                    gcode += generate_skirt(print, instance_to_print.print_object.object_skirt(), offset, layer_tools, layer, extruder_id);
+                    gcode += generate_skirt(print, instance_to_print.print_object.object_skirt(), offset, layer_tools, layer, extruder_id,
+                                            &instance_to_print.print_object);
                     if (instances_to_print.size() > 1 && &instance_to_print != &*(instances_to_print.end() - 1))
                         m_skirt_done.pop_back();
                 }

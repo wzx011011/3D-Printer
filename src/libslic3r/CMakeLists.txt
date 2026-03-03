@@ -545,8 +545,6 @@ if(WIN32)
         UnittestFlow.hpp
         AutomationMgr.hpp
         AutomationMgr.cpp
-        WindowStateManager.hpp
-        WindowStateManager.cpp
     )
 endif()
 

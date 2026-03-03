@@ -7,6 +7,7 @@
 #include "slic3r/GUI/print_manage/Utils.hpp"
 #include "libslic3r_version.h"
 #include "../Utils/Http.hpp"
+#include "slic3r/GUI/SystemId/SystemId.hpp"
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
@@ -274,6 +275,9 @@ wxString WebViewPanel::GetURL()
 
     int port = wxGetApp().get_server_port();
     wxGetApp().check_creality_privacy_version(false); // 检查隐私政策版本
+
+    std::string os_description = Slic3r::Http::url_encode(wxGetOsDescription().ToStdString());
+
     // for pro
     #ifdef _DEBUG1
     if (boost::algorithm::iequals(type, std::string("Dev"))) {
@@ -284,19 +288,20 @@ wxString WebViewPanel::GetURL()
     }
     #endif
     wxString url = wxString::Format(
-        "http://localhost:%d/homepage/index.html?lang=%s&version=%s&type=%s&region=%s&use_inches=%s&debug=false&ai=true&time=%d&privacy=%d#/Community/Home Page", port,
-        lang, version, type, region, use_inches,std::time(0),wxGetApp().is_privacy_checked());
-#ifdef _DEBUG1
+        "http://localhost:%d/homepage/index.html?lang=%s&version=%s&type=%s&region=%s&use_inches=%s&debug=false&ai=true&time=%d&privacy=%d&os=%s#/Community/Home Page",
+        port,
+        lang, version, type, region, use_inches, std::time(0), wxGetApp().is_privacy_checked(), os_description);
+    #ifdef _DEBUG1
     // for dev: 使用局域网地址：可以找【刘明，或其他前端开发同事】，按要求启动一个 http 服务，用于调试
     port = 9090;
 
     //
     
     url = wxString::Format(
-        "http://localhost:%d/index.html?lang=%s&version=%s&type=%s&region=%s&use_inches=%s&debug=false&ai=true&time=%d&privacy=%d#/"
+        "http://localhost:%d/index.html?lang=%s&version=%s&type=%s&region=%s&use_inches=%s&debug=false&ai=true&time=%d&privacy=%d&os=%s#/"
         "Community/Home Page",
-        port, lang, version, type, region, use_inches, std::time(0), wxGetApp().is_privacy_checked());
-#endif
+        port, lang, version, type, region, use_inches, std::time(0), wxGetApp().is_privacy_checked(), os_description);
+    #endif
     return url;
 }
 WebViewPanel::~WebViewPanel()

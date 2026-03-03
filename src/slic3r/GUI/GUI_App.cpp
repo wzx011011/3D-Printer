@@ -47,6 +47,7 @@
 #include <iterator>
 #include <exception>
 #include <cstdlib>
+#include <cctype>
 #include <regex>
 #include <thread>
 #include <string_view>
@@ -275,6 +276,43 @@ VersionInfo::VersionInfo()
     }
     force_upgrade = false;
     version_str = "";
+}
+
+void GUI_App::schedule_software_launch_analytics()
+{
+    if (m_app_launch_initialized)
+        return;
+    if (!is_privacy_checked())
+        return;
+
+    wxTimer* timer = new wxTimer();
+    timer->Bind(wxEVT_TIMER, [this, timer](wxTimerEvent&) {
+        if (m_app_launch_initialized || !is_privacy_checked()) {
+            timer->Stop();
+            delete timer;
+            return;
+        }
+
+        m_app_launch_initialized = true;
+
+        check_app_first_launch_info();
+        AnalyticsDataUploadManager::getInstance()
+            .triggerUploadTasks(AnalyticsUploadTiming::ON_SOFTWARE_LAUNCH,
+                                {AnalyticsDataEventType::ANALYTICS_SOFTWARE_LAUNCH,
+                                 AnalyticsDataEventType::ANALYTICS_ACCOUNT_DEVICE_INFO});
+
+        if (app_config->get_bool("software_crash")) {
+            AnalyticsDataUploadManager::getInstance()
+                .triggerUploadTasks(AnalyticsUploadTiming::ON_SOFTWARE_CRASH,
+                                    {AnalyticsDataEventType::ANALYTICS_SOFTWARE_CRASH});
+            app_config->set_bool("software_crash", false);
+            app_config->save();
+        }
+
+        timer->Stop();
+        delete timer;
+    });
+    timer->StartOnce(5000);
 }
 
 void VersionInfo::parse_version_str(std::string str) 
@@ -3594,7 +3632,7 @@ bool GUI_App::on_init_inner(bool isdump_launcher)
     // !!! Initialization of UI settings as a language, application color mode, fonts... have to be done before first UI action.
     // Like here, before the show InfoDialog in check_older_app_config()
 
-    bool is_first_run = !boost::filesystem::exists(data_dir() + "/config.ini") || 
+    bool is_first_run = !boost::filesystem::exists(data_dir() + "/Creality.conf") || 
                         app_config->get("language").empty();
 #ifdef __APPLE__
     if (is_first_run) {
@@ -3967,11 +4005,6 @@ bool GUI_App::on_init_inner(bool isdump_launcher)
     // 启动用户信息文件监听，确保跨实例同步在线模型库登录状态
     start_user_info_watcher();
 
-    // Export UI components for automation testing
-    if (AutomationMgr::enabled()) {
-        AutomationMgr::exportUIComponents();
-    }
-
 //#if BBL_HAS_FIRST_PAGE
     //BBS: set tp3DEditor firstly
     /*plater_->canvas3D()->enable_render(false);
@@ -4112,9 +4145,20 @@ void  GUI_App::on_init_custom_config()
 }
 void  GUI_App::track_event(const std::string& event, const std::string& data)
 {
-    if(mainframe)
-    {
-        mainframe->trackEvent(event, data);
+    std::string final_data = data;
+    try {
+        nlohmann::json js = nlohmann::json::parse(data);
+        if (js.is_object()) {
+            js["app_version"]    = GUI_App::format_display_version().c_str();
+            js["operating_system"] = wxGetOsDescription().ToStdString().c_str();
+            js["client_id"]      = SystemId::get_system_id();
+            js["user_id"]        = wxGetApp().get_user().userId;
+            final_data = js.dump();
+        }
+    } catch (...) {
+    }
+    if (mainframe) {
+        mainframe->trackEvent(event, final_data);
     }
 }
 void GUI_App::copy_network_if_available()
@@ -6110,7 +6154,8 @@ std::string GUI_App::handle_web_request(std::string cmd)
         boost::optional<std::string> command = root.get_optional<std::string>("command");
 
         wxString strInput  = cmd;
-        
+
+        schedule_software_launch_analytics();
 
         if (command.has_value()) {
             std::string command_str = command.value();
@@ -6211,32 +6256,6 @@ std::string GUI_App::handle_web_request(std::string cmd)
                     }
                     wxString strJS = wxString::Format("window.handleStudioCmd(%s)", m_Res.dump(-1, ' ', true));
                     GUI::wxGetApp().run_script(strJS);
-
-                    wxTimer* timer = new wxTimer();
-                    timer->Bind(wxEVT_TIMER, [this, timer](wxTimerEvent&) {
-                        // when reload_homepage() is called, will trigger  this "get_account_info", so we use  m_app_launch_initialized to
-                        // make sure only upload once
-                        if (wxGetApp().is_privacy_checked() && !m_app_launch_initialized) {
-                            m_app_launch_initialized = true;
-                            GUI::wxGetApp().check_app_first_launch_info();
-                            // software launch, upload analytics data here
-                            AnalyticsDataUploadManager::getInstance()
-                                .triggerUploadTasks(AnalyticsUploadTiming::ON_SOFTWARE_LAUNCH,
-                                                    {AnalyticsDataEventType::ANALYTICS_SOFTWARE_LAUNCH,
-                                                     AnalyticsDataEventType::ANALYTICS_ACCOUNT_DEVICE_INFO});
-
-                            if (wxGetApp().app_config->get_bool("software_crash")) {
-                                AnalyticsDataUploadManager::getInstance()
-                                    .triggerUploadTasks(AnalyticsUploadTiming::ON_SOFTWARE_CRASH,
-                                                        {AnalyticsDataEventType::ANALYTICS_SOFTWARE_CRASH});
-                                wxGetApp().app_config->set_bool("software_crash", false);
-                                wxGetApp().app_config->save();
-                            }
-                        }
-                        timer->Stop();
-                        delete timer;
-                    });
-                    timer->StartOnce(8000);
 
                 });
 
@@ -7024,7 +7043,7 @@ std::string GUI_App::handle_web_request(std::string cmd)
                                     {
                                         std::string nozzle_diameter = printer["nozzleDiameter"][0].get<std::string>();
                                         std::string name = printer["name"].get<std::string>();
-                                        if(name.find("Creality")==std::string::npos)
+                                        if(name.find("Creality")==std::string::npos&&name.find("SPARKX")==std::string::npos)
                                         {
                                             name = "Creality " + name;
                                         }
@@ -8083,15 +8102,35 @@ void GUI_App::check_creality_privacy_version(bool bShowDlg)
     bool                    needUpdate  = true;
     boost::filesystem::path device_file = boost::filesystem::path(Slic3r::data_dir()) / "privacyInfo.json";
     std::string             version     = std::string(CREALITYPRINT_VERSION);
+    auto parse_major_version = [](const std::string& ver, int& major_out) -> bool {
+        size_t i = 0;
+        while (i < ver.size() && !std::isdigit(static_cast<unsigned char>(ver[i])))
+            ++i;
+        if (i >= ver.size())
+            return false;
+
+        size_t j = i;
+        while (j < ver.size() && std::isdigit(static_cast<unsigned char>(ver[j])))
+            ++j;
+
+        try {
+            major_out = std::stoi(ver.substr(i, j - i));
+            return true;
+        } catch (...) {
+            return false;
+        }
+    };
+
+    int  cur_major    = 0;
+    bool has_cur_major = parse_major_version(version, cur_major);
     if (!boost::filesystem::exists(device_file)) {
-        if(!bShowDlg)
-        {
+        
+        std::string    res = app_config->get("is_first_install");
+        std::cout<<"is_first_install"<<res<<bShowDlg<<std::endl;
+        if (res == "1" && !bShowDlg)
+            bShowDlg = true;
+        else
             return;
-        }
-        save_privacy_version();  
-        if (privacyData.is_null()) {
-            privacyData["list"] = nlohmann::json::array();
-        }
        
     } else {
         try{
@@ -8102,25 +8141,47 @@ void GUI_App::check_creality_privacy_version(bool bShowDlg)
         privacyData = json::parse(buffer);
         if (privacyData.contains("list")) {
             for (auto& v : privacyData["list"]) {
-                if (v["version"] == version) {
-                    m_privacy_checked = v["check"].get<bool>();
+                if (!v.contains("version") || !v["version"].is_string()) {
+                    needUpdate = true;
+                    continue;
+                }
+
+                const std::string stored_version = v["version"].get<std::string>();
+                int               stored_major   = 0;
+                const bool        has_stored_major = parse_major_version(stored_version, stored_major);
+                const bool        match_major      = has_cur_major && has_stored_major && stored_major == cur_major;
+                const bool        match_exact      = (!has_cur_major || !has_stored_major) && stored_version == version;
+
+                if (match_major) {
+                    if (v.contains("check") && v["check"].is_boolean())
+                        m_privacy_checked = v["check"].get<bool>();
+                    if(!match_exact)
+                    {
+                        v["version"] = version;
+                        save_privacy_version();
+                    }
                     needUpdate = false;
                     break;
-                } else {
-                    needUpdate = true;
                 }
+
+                needUpdate = true;
             }
         }
         }catch(...){
             
         }
-     needUpdate = false; // 不跟版本走了，只弹一次
+        if(needUpdate)
+        {
+            bShowDlg = true;
+        }
+
     }
     if(!bShowDlg)
     {
         return;
     }
     if (needUpdate) {
+        privacyData["list"] = nlohmann::json::array();
         nlohmann::json item;
         item["version"] = version;
         item["check"]   = false;

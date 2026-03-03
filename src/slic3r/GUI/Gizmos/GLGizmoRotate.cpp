@@ -1,12 +1,11 @@
 #include "GLGizmoRotate.hpp"
 #include "slic3r/GUI/GLCanvas3D.hpp"
 #include "slic3r/GUI/ImGuiWrapper.hpp"
-
 #include "slic3r/GUI/GUI_App.hpp"
 #include "slic3r/GUI/GUI.hpp"
 #include "slic3r/GUI/Plater.hpp"
 #include "slic3r/GUI/Jobs/RotoptimizeJob.hpp"
-
+#include "slic3r/GUI/AnalyticsDataUploadManager.hpp"
 #include "libslic3r/PresetBundle.hpp"
 
 #include <GL/glew.h>
@@ -497,11 +496,10 @@ Vec3d GLGizmoRotate::mouse_position_in_local_plane(const Linef3& mouse_ray) cons
 //BBS: GUI refactor: add obj manipulation
 GLGizmoRotate3D::GLGizmoRotate3D(GLCanvas3D& parent, const std::string& icon_filename, unsigned int sprite_id, GizmoObjectManipulation* obj_manipulation)
     : GLGizmoBase(parent, icon_filename, sprite_id)
-    , m_gizmos({ 
-        GLGizmoRotate(parent, GLGizmoRotate::X), 
+    , m_gizmos({
+        GLGizmoRotate(parent, GLGizmoRotate::X),
         GLGizmoRotate(parent, GLGizmoRotate::Y),
         GLGizmoRotate(parent, GLGizmoRotate::Z) })
-	//BBS: GUI refactor: add obj manipulation
     , m_object_manipulation(obj_manipulation)
 {
     load_rotoptimize_state();
@@ -585,6 +583,8 @@ void GLGizmoRotate3D::on_stop_dragging()
     assert(0 <= m_hover_id && m_hover_id < 3);
     m_parent.do_rotate(L("Gizmo-Rotate"));
     m_gizmos[m_hover_id].stop_dragging();
+    if (m_object_manipulation)
+        m_object_manipulation->on_rotate_operation_performed();
 }
 
 void GLGizmoRotate3D::on_dragging(const UpdateData &data)

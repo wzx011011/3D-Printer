@@ -1,5 +1,7 @@
 #include "HoverBorderIcon.hpp"
 #include "Label.hpp"
+#include <algorithm>
+#include <cmath>
 #include <wx/gdicmn.h>
 #include <wx/app.h> // Add this line to include the header file for wxGetApp
 #include <wx/wx.h>
@@ -30,7 +32,7 @@ void HoverBorderIcon::Create(wxWindow* parent, const wxString& text, const wxStr
     bool is_dark = Slic3r::GUI::wxGetApp().dark_mode();
     
     StaticBox::Create(parent, wxID_ANY, pos, size, style);
-    SetCornerRadius(6);
+    SetCornerRadius(FromDIP(m_corner_radius_dip));
     SetLabel(text);
 
     StaticBox::SetFont(Label::Body_13);
@@ -43,12 +45,13 @@ void HoverBorderIcon::Create(wxWindow* parent, const wxString& text, const wxStr
 #endif // !__APPLE__
 
     state_handler.update_binds();
-    //int m_icon_px_cnt_DIP = 24;
-    int dip_w = ToDIP(size.GetWidth());
-    int dip_h = ToDIP(size.GetHeight());
-    int dip_min = std::min(dip_w, dip_h);
+    const int dip_w   = (size.GetWidth() > 0) ? ToDIP(size.GetWidth()) : -1;
+    const int dip_h   = (size.GetHeight() > 0) ? ToDIP(size.GetHeight()) : -1;
+    const int dip_min = (dip_w > 0 && dip_h > 0) ? std::min(dip_w, dip_h) : -1;
+    if (dip_w > 0 && dip_h > 0)
+        m_fixed_size_dip = wxSize(dip_w, dip_h);
     if (dip_min > 0) {
-        m_icon_size_or_scale = std::max(1, (int)std::lround(dip_min * m_icon_rel_scale));
+        m_icon_size_or_scale = std::max(1, (int) std::lround(dip_min * m_icon_rel_scale));
     } else {
         m_icon_size_or_scale = 20;
     }
@@ -112,7 +115,38 @@ void HoverBorderIcon::on_sys_color_changed(bool is_dark_mode)
 
 void HoverBorderIcon::msw_rescale()
 {
-    Slic3r::GUI::wxGetApp().UpdateDarkUI(this); 
+    Slic3r::GUI::wxGetApp().UpdateDarkUI(this);
+
+    // If created with an explicit size, keep that size in DIP and rescale it with the window DPI.
+    if (m_fixed_size_dip.GetWidth() > 0 && m_fixed_size_dip.GetHeight() > 0) {
+        const wxSize px = FromDIP(m_fixed_size_dip);
+        SetMinSize(px);
+        SetMaxSize(px);
+        SetSize(px);
+    }
+
+    SetCornerRadius(FromDIP(m_corner_radius_dip));
+
+    // Recalculate icon DIP size from the current (logical) size and recreate bitmaps.
+    wxSize dip_size = m_fixed_size_dip;
+    if (dip_size.GetWidth() <= 0 || dip_size.GetHeight() <= 0) {
+        const wxSize px = GetSize();
+        dip_size = wxSize(ToDIP(px.GetWidth()), ToDIP(px.GetHeight()));
+    }
+    const int dip_min = (dip_size.GetWidth() > 0 && dip_size.GetHeight() > 0) ? std::min(dip_size.GetWidth(), dip_size.GetHeight()) : -1;
+    if (dip_min > 0)
+        m_icon_size_or_scale = std::max(1, (int)std::lround(dip_min * m_icon_rel_scale));
+
+    if (!m_icon.name().empty())
+        m_icon = ScalableBitmap(this, m_icon.name(), (int)m_icon_size_or_scale);
+
+    if (!m_bmpDiableIcon.name().empty()) {
+        const int px_cnt = (m_disable_icon_px_cnt_dip > 0) ? m_disable_icon_px_cnt_dip : m_bmpDiableIcon.px_cnt();
+        m_bmpDiableIcon  = ScalableBitmap(this, m_bmpDiableIcon.name(), px_cnt);
+    }
+
+    InvalidateBestSize();
+    Refresh();
 }
 
 void HoverBorderIcon::setEnable(bool enable)
@@ -128,7 +162,8 @@ void HoverBorderIcon::setEnable(bool enable)
 
 void HoverBorderIcon::setDisableIcon(const wxString& disableIconName, int px_cnt/* = 18*/)
 {
-    m_bmpDiableIcon = ScalableBitmap(this, disableIconName.ToStdString(), FromDIP(px_cnt));
+    m_disable_icon_px_cnt_dip = px_cnt;
+    m_bmpDiableIcon = ScalableBitmap(this, disableIconName.ToStdString(), px_cnt);
 }
 
 void HoverBorderIcon::OnMouseMove(wxMouseEvent& event)

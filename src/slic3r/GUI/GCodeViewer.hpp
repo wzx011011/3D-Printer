@@ -790,7 +790,7 @@ mutable bool m_no_render_path { false };
     bool m_is_belt {false};
 
 	bool m_is_lod {false};
-	float m_stride_factor {10.0f};
+	float m_stride_factor {12.50f};
     int   m_filter_stride {0};
     std::set<int> m_top_surface_layer;
 

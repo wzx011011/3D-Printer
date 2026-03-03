@@ -123,6 +123,10 @@ public:
     void do_render_scale_input_window(ImGuiWrapper* imgui_wrapper, std::string window_name, float x, float y, float bottom_limit);
     float max_unit_size(int number, Vec3d &vec1, Vec3d &vec2,std::string str);
     bool reset_button(ImGuiWrapper *imgui_wrapper, float caption_max, float unit_size, float space_size, float end_text_size);
+    void reset_move_analytics_state();
+    void on_move_operation_performed();
+    void reset_rotate_analytics_state();
+    void on_rotate_operation_performed();
 
 private:
     void reset_settings_value();
@@ -145,6 +149,9 @@ private:
     void reset_position_value();
     void reset_rotation_value();
     void reset_scale_value();
+
+    bool m_move_analytics_reported { false };
+    bool m_rotate_analytics_reported { false };
 
     GLCanvas3D& m_glcanvas;
     unsigned int m_last_active_item { 0 };

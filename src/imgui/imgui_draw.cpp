@@ -2047,11 +2047,46 @@ void    ImFontAtlas::GetTexDataAsRGBA32(unsigned char** out_pixels, int* out_wid
         GetTexDataAsAlpha8(&pixels, NULL, NULL);
         if (pixels)
         {
-            TexPixelsRGBA32 = (unsigned int*)IM_ALLOC((size_t)TexWidth * (size_t)TexHeight * 4);
+            //  check if texture size is valid
+            if(TexWidth <= 0 || TexHeight <= 0) {
+                BOOST_LOG_TRIVIAL(warning) << "ImFontAtlas::GetTexDataAsRGBA32: Invalid texture dimensions: "
+                                          << "TexWidth=" << TexWidth << ", TexHeight=" << TexHeight;
+                
+                TexPixelsRGBA32 = NULL;
+                
+                *out_pixels = NULL;
+                if (out_width) *out_width = 0;
+                if (out_height) *out_height = 0;
+                if (out_bytes_per_pixel) *out_bytes_per_pixel = 4;
+                return;            
+            }
+
+            size_t alloc_size = (size_t)TexWidth * (size_t)TexHeight * 4;
+
+            TexPixelsRGBA32 = (unsigned int*)IM_ALLOC(alloc_size);
+            if(TexPixelsRGBA32 == NULL) {
+                // handle memory allocation fail situation
+                BOOST_LOG_TRIVIAL(warning) << "ImFontAtlas::GetTexDataAsRGBA32: Memory allocation failed! "
+                                          << "Requested size: " << alloc_size << " bytes ("
+                                          << (alloc_size / (1024.0f * 1024.0f)) << " MB) "
+                                          << "for " << TexWidth << "x" << TexHeight << " texture.";      
+
+                *out_pixels = NULL;
+                if (out_width) *out_width = 0;
+                if (out_height) *out_height = 0;
+                if (out_bytes_per_pixel) *out_bytes_per_pixel = 4;
+                return;
+            }
+
             const unsigned char* src = pixels;
             unsigned int* dst = TexPixelsRGBA32;
             for (int n = TexWidth * TexHeight; n > 0; n--)
                 *dst++ = IM_COL32(255, 255, 255, (unsigned int)(*src++));
+        }
+        else
+        {
+            BOOST_LOG_TRIVIAL(warning) << "ImFontAtlas::GetTexDataAsRGBA32: Failed to get Alpha8 font data";
+            TexPixelsRGBA32 = NULL;
         }
     }
 
@@ -2059,6 +2094,10 @@ void    ImFontAtlas::GetTexDataAsRGBA32(unsigned char** out_pixels, int* out_wid
     if (out_width) *out_width = TexWidth;
     if (out_height) *out_height = TexHeight;
     if (out_bytes_per_pixel) *out_bytes_per_pixel = 4;
+
+    if (TexPixelsRGBA32 == NULL) {
+        BOOST_LOG_TRIVIAL(warning) << "ImFontAtlas::GetTexDataAsRGBA32: Returning NULL texture data";
+    }
 }
 
 ImFont* ImFontAtlas::AddFont(const ImFontConfig* font_cfg)

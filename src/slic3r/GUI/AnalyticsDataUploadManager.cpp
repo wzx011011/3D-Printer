@@ -13,6 +13,7 @@
 #include "slic3r/GUI/print_manage/AccountDeviceMgr.hpp"
 #include "CrProject.hpp"
 #include "libslic3r/Platform.hpp"
+#include "slic3r/GUI/SystemId/SystemId.hpp"
 
 namespace Slic3r {
 namespace GUI {
@@ -77,6 +78,112 @@ void AnalyticsDataUploadManager::triggerUploadTasks(AnalyticsUploadTiming trigge
     }
 }
 
+void AnalyticsDataUploadManager::triggerUploadTasksWithPayload(AnalyticsUploadTiming triggerTiming, const AnalyticsEventPayload& payload, int plate_idx, const std::string& device_mac)
+{
+    try
+    {
+        if (wxGetApp().is_privacy_checked()) {
+            nlohmann::json js = payload.data;
+            switch (payload.type) {
+            case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_ADD:
+                track_model_action("model_action_add", js);
+                break;
+            case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_ADD_PLATE:
+                track_model_action("model_action_add_plate", js);
+                break;
+            case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_MOVE:
+                track_model_action("model_action_move", js);
+                break;
+            case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_ROTATE:
+                track_model_action("model_action_rotate", js);
+                break;
+            case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_AUTO_ORIENT:
+                track_model_action("model_action_auto_orient", js);
+                break;
+            case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_ARRANGE_ALL:
+                track_model_action("model_action_arrange_all", js);
+                break;
+            case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_LAY_ON_FACE:
+                track_model_action("model_action_lay_on_face", js);
+                break;
+            case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_SPLIT_TO_OBJECTS:
+                track_model_action("model_action_split_to_objects", js);
+                break;
+            case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_SPLIT_TO_PARTS:
+                track_model_action("model_action_split_to_parts", js);
+                break;
+            case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_SCALE:
+                track_model_action("model_action_scale", js);
+                break;
+            case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_HOLLOW:
+                track_model_action("model_action_hollow", js);
+                break;
+            case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_ADD_HOLE:
+                track_model_action("model_action_add_hole", js);
+                break;
+            case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_CUT:
+                track_model_action("model_action_cut", js);
+                break;
+            case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_BOOLEAN:
+                track_model_action("model_action_boolean", js);
+                break;
+            case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_MEASURE:
+                track_model_action("model_action_measure", js);
+                break;
+            case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_SUPPORT_PAINT:
+                track_model_action("model_action_support_paint", js);
+                break;
+            case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_ZSEAM_PAINT:
+                track_model_action("model_action_zseam_paint", js);
+                break;
+            case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_VARIABLE_LAYER:
+                track_model_action("model_action_variable_layer", js);
+                break;
+            case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_PAINT:
+                track_model_action("model_action_paint", js);
+                break;
+            case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_EMBOSS:
+                track_model_action("model_action_emboss", js);
+                break;
+            case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_ASSEMBLY_VIEW:
+                track_model_action("model_action_assembly_view", js);
+                break;
+            case AnalyticsDataEventType::ANALYTICS_GOTO_WIKI:
+                track_model_action("goto_wiki", js);
+                break;
+            case AnalyticsDataEventType::ANALYTICS_AI_SERVICE_CALL:
+                track_model_action("ai_service_call", js);
+                break;
+            case AnalyticsDataEventType::ANALYTICS_GOTO_SUPPORT:
+                track_model_action("goto_support", js);
+                break;
+            case AnalyticsDataEventType::ANALYTICS_TAB_HOME:
+                track_model_action("tab_home", js);
+                break;
+            case AnalyticsDataEventType::ANALYTICS_ONLINE_MODELS:
+                track_model_action("tab_online_models", js);
+                break;
+            case AnalyticsDataEventType::ANALYTICS_PREPARE:
+                track_model_action("tab_prepare", js);
+                break;
+            case AnalyticsDataEventType::ANALYTICS_PREVIEW:
+                track_model_action("tab_preview", js);
+                break;
+            case AnalyticsDataEventType::ANALYTICS_DEVICE:
+                track_model_action("tab_device", js);
+                break;
+            default:
+                processUploadData(payload.type, plate_idx, device_mac);
+                break;
+            }
+        }
+    }
+    catch (...)
+    {
+
+    }
+}
+
 void AnalyticsDataUploadManager::mark_analytics_project_info(const std::string& full_url,
                                             const std::string& model_id,
                                             const std::string& file_id,
@@ -113,50 +220,138 @@ void AnalyticsDataUploadManager::processUploadData(AnalyticsDataEventType dataEv
 #endif
     switch (dataEventType)
     {
-    case AnalyticsDataEventType::ANALYTICS_GLOBAL_PRINT_PARAMS: 
+    case AnalyticsDataEventType::ANALYTICS_GLOBAL_PRINT_PARAMS:
         uploadGlobalPrintParams(plate_idx, device_mac);
         break;
-
-    case AnalyticsDataEventType::ANALYTICS_OBJECT_PRINT_PARAMS: 
-        uploadObjectPrintParams(plate_idx,device_mac);
+    case AnalyticsDataEventType::ANALYTICS_OBJECT_PRINT_PARAMS:
+        uploadObjectPrintParams(plate_idx, device_mac);
         break;
-
     case AnalyticsDataEventType::ANALYTICS_SLICE_PLATE:
         uploadSlicePlateEventData();
         break;
-
-    case AnalyticsDataEventType::ANALYTICS_FIRST_LAUNCH: 
+    case AnalyticsDataEventType::ANALYTICS_FIRST_LAUNCH:
         uploadFirstLaunchEventData();
         break;
-
     case AnalyticsDataEventType::ANALYTICS_PREFERENCES_CHANGED:
         uploadPreferencesChangedData();
         break;
-
-    case AnalyticsDataEventType::ANALYTICS_SOFTWARE_LAUNCH: 
+    case AnalyticsDataEventType::ANALYTICS_SOFTWARE_LAUNCH:
         uploadSoftwareLaunchData();
         break;
-
     case AnalyticsDataEventType::ANALYTICS_SOFTWARE_CRASH:
         uploadSoftwareCrashData();
         break;
-
-    case AnalyticsDataEventType::ANALYTICS_BAD_ALLOC: 
-        uploadSoftwareBadAlloc(); 
+    case AnalyticsDataEventType::ANALYTICS_BAD_ALLOC:
+        uploadSoftwareBadAlloc();
         break;
-
-    case AnalyticsDataEventType::ANALYTICS_SOFTWARE_CLOSE: 
-        uploadSoftwareCloseData(); 
+    case AnalyticsDataEventType::ANALYTICS_SOFTWARE_CLOSE:
+        uploadSoftwareCloseData();
         break;
-
     case AnalyticsDataEventType::ANALYTICS_DEVICE_INFO:
         uploadDeviceInfoData();
         break;
-
     case AnalyticsDataEventType::ANALYTICS_ACCOUNT_DEVICE_INFO:
         uploadAccountDeviceInfoData();
         break;
-
+    case AnalyticsDataEventType::ANALYTICS_ONLINE_MODELS:
+        uploadOnlineModelsEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_PREPARE:
+        uploadPrepareEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_PREVIEW:
+        uploadPreviewEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_DEVICE:
+        uploadDeviceEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_CLICK_HOME_PAGE_PROJECTS:
+        uploadClickHomePageProjectsEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_CLICK_HOME_PAGE_ONLINE_PARAMS:
+        uploadClickHomePageOnlineParamsEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_CLICK_HOME_PAGE_TUTORIALS:
+        uploadClickHomePageTutorialsEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_CLICK_HOME_PAGE_PERSON_CENTER:
+        uploadClickHomePagePersonCenterEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_CLICK_HOME_PAGE_FEEDBACK:
+        uploadClickHomePageFeedbackEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_CLICK_HOME_PAGE_MAKENOW:
+        uploadClickHomePageMakenowEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_CLICK_HOME_PAGE_CREALITYMALL:
+        uploadClickHomePageCrealitymallEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_ADD:
+        uploadModelActionAddEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_ADD_PLATE:
+        uploadModelActionAddPlateEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_MOVE:
+        uploadModelActionMoveEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_ROTATE:
+        uploadModelActionRotateEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_AUTO_ORIENT:
+        uploadModelActionAutoOrientEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_ARRANGE_ALL:
+        uploadModelActionArrangeAllEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_LAY_ON_FACE:
+        uploadModelActionLayOnFaceEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_SPLIT_TO_OBJECTS:
+        uploadModelActionSplitToObjectsEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_SPLIT_TO_PARTS:
+        uploadModelActionSplitToPartsEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_SCALE:
+        uploadModelActionScaleEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_HOLLOW:
+        uploadModelActionHollowEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_ADD_HOLE:
+        uploadModelActionAddHoleEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_CUT:
+        uploadModelActionCutEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_BOOLEAN:
+        uploadModelActionBooleanEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_MEASURE:
+        uploadModelActionMeasureEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_SUPPORT_PAINT:
+        uploadModelActionSupportPaintEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_ZSEAM_PAINT:
+        uploadModelActionZseamPaintEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_VARIABLE_LAYER:
+        uploadModelActionVariableLayerEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_PAINT:
+        uploadModelActionPaintEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_EMBOSS:
+        uploadModelActionEmbossEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_ASSEMBLY_VIEW:
+        uploadModelActionAssemblyViewEvent();
+        break;
+    case AnalyticsDataEventType::ANALYTICS_AI_SERVICE_CALL:
+        uploadAiServiceCallEvent();
+        break;
     default:
         break;
     }
@@ -266,7 +461,7 @@ void AnalyticsDataUploadManager::uploadGlobalPrintParams(int plate_idx, const st
         js["app_version"] = GUI_App::format_display_version().c_str();
         js["operating_system"]      = wxGetOsDescription().ToStdString().c_str();
 
-        wxGetApp().track_event("print_global_parameters", js.dump());
+        track_model_action("print_global_parameters", js);
     }
     catch (const std::exception& err)
     {
@@ -350,7 +545,7 @@ void AnalyticsDataUploadManager::uploadObjectPrintParams(int plate_idx,const std
         js["app_version"] = GUI_App::format_display_version().c_str();
         js["operating_system"]      = wxGetOsDescription().ToStdString().c_str();
 
-        wxGetApp().track_event("object_print_parameters", js.dump());
+        track_model_action("object_print_parameters", js);
     }
     catch (const std::exception& err)
     {
@@ -382,7 +577,7 @@ void AnalyticsDataUploadManager::uploadSlicePlateEventData()
 
     js["app_version"] = GUI_App::format_display_version().c_str();
     js["operating_system"]      = wxGetOsDescription().ToStdString().c_str();
-    wxGetApp().track_event("cubeme_slice_event", js.dump());
+    track_model_action("cubeme_slice_event", js);
 }
 
 void AnalyticsDataUploadManager::uploadSoftwareLaunchData()
@@ -399,7 +594,7 @@ void AnalyticsDataUploadManager::uploadSoftwareLaunchData()
     js["operating_system"]      = wxGetOsDescription().ToStdString().c_str();
     js["launch_date"] = Slic3r::Utils::utc_timestamp(Slic3r::Utils::get_current_time_utc());
 
-    wxGetApp().track_event("software_launch", js.dump());
+    track_model_action("software_launch", js);
 }
 
 void AnalyticsDataUploadManager::uploadSoftwareCrashData()
@@ -418,7 +613,7 @@ void AnalyticsDataUploadManager::uploadSoftwareCrashData()
     js["system_architecture"] = get_system_architecture();
     js["crash_date"] = Slic3r::Utils::utc_timestamp(Slic3r::Utils::get_current_time_utc());
 
-    wxGetApp().track_event("software_crash", js.dump());
+    track_model_action("software_crash", js);
 }
 
 void AnalyticsDataUploadManager::uploadSoftwareBadAlloc()
@@ -436,7 +631,7 @@ void AnalyticsDataUploadManager::uploadSoftwareBadAlloc()
     js["operating_system"]  = wxGetOsDescription().ToStdString().c_str();
     js["crash_date"]        = Slic3r::Utils::utc_timestamp(Slic3r::Utils::get_current_time_utc());
 
-    wxGetApp().track_event("software_bad_alloc", js.dump());
+    track_model_action("software_bad_alloc", js);
 }
 
 
@@ -452,7 +647,7 @@ void AnalyticsDataUploadManager::uploadSoftwareCloseData()
     js["operating_system"]      = wxGetOsDescription().ToStdString().c_str();
     js["close_date"] = Slic3r::Utils::utc_timestamp(Slic3r::Utils::get_current_time_utc());
 
-    wxGetApp().track_event("software_close", js.dump());
+    track_model_action("software_close", js);
     BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << " end";
     boost::log::core::get()->flush();
 }
@@ -502,7 +697,7 @@ void AnalyticsDataUploadManager::uploadDeviceInfoData()
     js["app_version"] = GUI_App::format_display_version().c_str();
     //js["operating_system"]      = wxGetOsDescription().ToStdString().c_str();
 
-    wxGetApp().track_event("device_info", js.dump());
+    track_model_action("device_info", js);
 }
 
 void AnalyticsDataUploadManager::uploadAccountDeviceInfoData()
@@ -555,7 +750,7 @@ void AnalyticsDataUploadManager::uploadAccountDeviceInfoData()
     js["app_version"] = GUI_App::format_display_version().c_str();
     //js["operating_system"]      = wxGetOsDescription().ToStdString().c_str();
 
-    wxGetApp().track_event("device_info", js.dump());
+    track_model_action("device_info", js);
 }
 
 // software first launch (when "AppData\Roaming\Creality" directory first created)
@@ -570,7 +765,7 @@ void AnalyticsDataUploadManager::uploadFirstLaunchEventData()
     js["operating_system"]      = wxGetOsDescription().ToStdString().c_str();
     js["launch_date"] = Slic3r::Utils::utc_timestamp(Slic3r::Utils::get_current_time_utc());
 
-    wxGetApp().track_event("software_first_launch", js.dump());
+    track_model_action("software_first_launch", js);
 }
 
 void AnalyticsDataUploadManager::uploadPreferencesChangedData()
@@ -592,13 +787,237 @@ void AnalyticsDataUploadManager::uploadPreferencesChangedData()
     js["save_preset_choise"] = wxGetApp().app_config->get("save_preset_choise");
     js["save_project_choise"] = wxGetApp().app_config->get("save_project_choise");
     js["operation_date"] = Slic3r::Utils::utc_timestamp(Slic3r::Utils::get_current_time_utc());
-    js["enable_lod"] = wxGetApp().app_config->get("enable_lod");
-    js["enable_preview_lod"] = wxGetApp().app_config->get("enable_preview_lod");
+    js["lod_preparation"] = wxGetApp().app_config->get("enable_lod");
+    js["lod_preview"] = wxGetApp().app_config->get("enable_preview_lod");
 
-    wxGetApp().track_event("preferences_changed", js.dump());
+    track_model_action("preferences_changed", js);
 }
 
-// Static: upload slice822 click event
+void AnalyticsDataUploadManager::uploadOnlineModelsEvent()
+{
+    json js;
+    track_model_action("tab_online_models", js);
+}
+
+void AnalyticsDataUploadManager::uploadPrepareEvent()
+{
+    json js;
+    track_model_action("tab_prepare", js);
+}
+
+void AnalyticsDataUploadManager::uploadPreviewEvent()
+{
+    json js;
+    track_model_action("tab_preview", js);
+}
+
+void AnalyticsDataUploadManager::uploadDeviceEvent()
+{
+    json js;
+    track_model_action("tab_device", js);
+}
+
+void AnalyticsDataUploadManager::uploadClickHomePageProjectsEvent()
+{
+    json js;
+    js["app_version"] = GUI_App::format_display_version().c_str();
+    js["operating_system"] = wxGetOsDescription().ToStdString().c_str();
+    track_model_action("click_home_page_projects", js);
+}
+
+void AnalyticsDataUploadManager::uploadClickHomePageOnlineParamsEvent()
+{
+    json js;
+    js["app_version"] = GUI_App::format_display_version().c_str();
+    js["operating_system"] = wxGetOsDescription().ToStdString().c_str();
+    track_model_action("click_home_page_online_params", js);
+}
+
+void AnalyticsDataUploadManager::uploadClickHomePageTutorialsEvent()
+{
+    json js;
+    js["app_version"] = GUI_App::format_display_version().c_str();
+    js["operating_system"] = wxGetOsDescription().ToStdString().c_str();
+    track_model_action("click_home_page_tutorials", js);
+}
+
+void AnalyticsDataUploadManager::uploadClickHomePagePersonCenterEvent()
+{
+    json js;
+    js["app_version"] = GUI_App::format_display_version().c_str();
+    js["operating_system"] = wxGetOsDescription().ToStdString().c_str();
+    track_model_action("click_home_page_person_center", js);
+}
+
+void AnalyticsDataUploadManager::uploadClickHomePageFeedbackEvent()
+{
+    json js;
+    js["app_version"] = GUI_App::format_display_version().c_str();
+    js["operating_system"] = wxGetOsDescription().ToStdString().c_str();
+    track_model_action("click_home_page_feedback", js);
+}
+
+void AnalyticsDataUploadManager::uploadClickHomePageMakenowEvent()
+{
+    json js;
+    js["app_version"] = GUI_App::format_display_version().c_str();
+    js["operating_system"] = wxGetOsDescription().ToStdString().c_str();
+    track_model_action("click_home_page_makenow", js);
+}
+
+void AnalyticsDataUploadManager::uploadClickHomePageCrealitymallEvent()
+{
+    json js;
+    js["app_version"] = GUI_App::format_display_version().c_str();
+    js["operating_system"] = wxGetOsDescription().ToStdString().c_str();
+    track_model_action("click_home_page_crealitymall", js);
+}
+
+void AnalyticsDataUploadManager::track_model_action(const std::string& event_name, nlohmann::json& js)
+{
+    if (js.find("app_version") == js.end())
+        js["app_version"] = GUI_App::format_display_version().c_str();
+    if (js.find("operating_system") == js.end())
+        js["operating_system"] = wxGetOsDescription().ToStdString().c_str();
+    if (js.find("client_id") == js.end())
+        js["client_id"] = SystemId::get_system_id();
+    if (js.find("user_id") == js.end())
+        js["user_id"] = wxGetApp().get_user().userId;
+    wxGetApp().track_event(event_name, js.dump());
+}
+
+void AnalyticsDataUploadManager::uploadModelActionAddEvent()
+{
+    json js;
+    //track_model_action("model_action_add", js);
+}
+
+void AnalyticsDataUploadManager::uploadModelActionAddPlateEvent()
+{
+    json js;
+    //track_model_action("model_action_add_plate", js);
+}
+
+void AnalyticsDataUploadManager::uploadModelActionMoveEvent()
+{
+    json js;
+    //track_model_action("model_action_move", js);
+}
+
+void AnalyticsDataUploadManager::uploadModelActionRotateEvent()
+{
+    json js;
+    //track_model_action("model_action_rotate", js);
+}
+
+void AnalyticsDataUploadManager::uploadModelActionAutoOrientEvent()
+{
+    json js;
+    track_model_action("model_action_auto_orient", js);
+}
+
+void AnalyticsDataUploadManager::uploadModelActionArrangeAllEvent()
+{
+    json js;
+    track_model_action("model_action_arrange_all", js);
+}
+
+void AnalyticsDataUploadManager::uploadModelActionLayOnFaceEvent()
+{
+    json js;
+    track_model_action("model_action_lay_on_face", js);
+}
+
+void AnalyticsDataUploadManager::uploadModelActionSplitToObjectsEvent()
+{
+    json js;
+    track_model_action("model_action_split_to_objects", js);
+}
+
+void AnalyticsDataUploadManager::uploadModelActionSplitToPartsEvent()
+{
+    json js;
+    track_model_action("model_action_split_to_parts", js);
+}
+
+void AnalyticsDataUploadManager::uploadModelActionScaleEvent()
+{
+    json js;
+    track_model_action("model_action_scale", js);
+}
+
+void AnalyticsDataUploadManager::uploadModelActionHollowEvent()
+{
+    json js;
+    track_model_action("model_action_hollow", js);
+}
+
+void AnalyticsDataUploadManager::uploadModelActionAddHoleEvent()
+{
+    json js;
+    track_model_action("model_action_add_hole", js);
+}
+
+void AnalyticsDataUploadManager::uploadModelActionCutEvent()
+{
+    json js;
+    track_model_action("model_action_cut", js);
+}
+
+void AnalyticsDataUploadManager::uploadModelActionBooleanEvent()
+{
+    json js;
+    track_model_action("model_action_boolean", js);
+}
+
+void AnalyticsDataUploadManager::uploadModelActionMeasureEvent()
+{
+    json js;
+    track_model_action("model_action_measure", js);
+}
+
+void AnalyticsDataUploadManager::uploadModelActionSupportPaintEvent()
+{
+    json js;
+    track_model_action("model_action_support_paint", js);
+}
+
+void AnalyticsDataUploadManager::uploadModelActionZseamPaintEvent()
+{
+    json js;
+    track_model_action("model_action_zseam_paint", js);
+}
+
+void AnalyticsDataUploadManager::uploadModelActionVariableLayerEvent()
+{
+    json js;
+    track_model_action("model_action_variable_layer", js);
+}
+
+void AnalyticsDataUploadManager::uploadModelActionPaintEvent()
+{
+    json js;
+    track_model_action("model_action_paint", js);
+}
+
+void AnalyticsDataUploadManager::uploadModelActionEmbossEvent()
+{
+    json js;
+    track_model_action("model_action_emboss", js);
+}
+
+void AnalyticsDataUploadManager::uploadModelActionAssemblyViewEvent()
+{
+    json js;
+    track_model_action("model_action_assembly_view", js);
+}
+
+void AnalyticsDataUploadManager::uploadAiServiceCallEvent()
+{
+    json js;
+    track_model_action("ai_service_call", js);
+}
+
 void AnalyticsDataUploadManager::uploadSlice822ClickEvent(const std::string& module, int id)
 {
     try {
@@ -612,8 +1031,6 @@ void AnalyticsDataUploadManager::uploadSlice822ClickEvent(const std::string& mod
         payload["timestamp"]       = Slic3r::Utils::utc_timestamp(Slic3r::Utils::get_current_time_utc());
 
         //nlohmann::json root;
-        //root["slice822"] = payload;
-
         wxGetApp().track_event("click_event", payload.dump());
     } catch (const std::exception& err) {
         BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": json create got a generic exception, reason = " << err.what();

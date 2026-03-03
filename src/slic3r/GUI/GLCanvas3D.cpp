@@ -3378,6 +3378,7 @@ void GLCanvas3D::bind_event_handlers()
         m_canvas->Bind(wxEVT_PAINT, &GLCanvas3D::on_paint, this);
         m_canvas->Bind(wxEVT_SET_FOCUS, &GLCanvas3D::on_set_focus, this);
         m_canvas->Bind(wxEVT_KILL_FOCUS, [this](wxFocusEvent& evt) {
+            wxGetApp().imgui()->reset_imgui_input_state();
             ImGui::SetWindowFocus(nullptr);
             render();
             evt.Skip();
@@ -3386,6 +3387,16 @@ void GLCanvas3D::bind_event_handlers()
             m_mouse_scheme = e.GetInt(); 
             this->set_as_dirty();
             this->render();
+        });
+        m_canvas->Bind(wxEVT_ACTIVATE, [this](wxActivateEvent& e){
+            if (!e.GetActive()) 
+                wxGetApp().imgui()->reset_imgui_input_state();
+            e.Skip();
+        });
+
+        m_canvas->Bind(wxEVT_MOUSE_CAPTURE_LOST, [this](wxMouseCaptureLostEvent& e){
+            wxGetApp().imgui()->reset_imgui_input_state();
+            e.Skip();
         });
 
         m_event_handlers_bound = true;
@@ -4250,6 +4261,12 @@ void GLCanvas3D::on_mouse_wheel(wxMouseEvent& evt)
             m_layers_slider->on_mouse_wheel(evt);
             m_moves_slider->on_mouse_wheel(evt);
         } else if (m_canvas_type == CanvasView3D) {
+            if (ImGui::GetCurrentContext()) {
+                ImGuiIO& io = ImGui::GetIO();
+                const float wheel_y = (float)evt.GetWheelRotation() / (float)evt.GetWheelDelta();
+                io.MouseWheel += wheel_y;
+                io.WantCaptureMouse;
+            }
             IMSlider* cliper = get_gcode_viewer().get_cliper_slider();
             cliper->on_mouse_wheel(evt);
         }
@@ -10154,7 +10171,7 @@ void GLCanvas3D::_render_slice_control() const
                          ImVec2(drop_pos.x, drop_pos.y + drop_size.y - 1.0f),
                          sep_col, 1.0f);
             ImVec2 drop_min_slice = drop_pos;
-            if (ImGui::IsItemClicked() || ImGui::IsItemHovered()) ImGui::OpenPopup("^##id0");
+            if (ImGui::IsItemClicked()) ImGui::OpenPopup("^##id0");
             // Popup menu width equals main+dropdown width; white menu background; no padding
             {
                 ImVec4 dark_bg = ImVec4(0x59/255.f, 0x59/255.f, 0x5D/255.f, 1.0f); // #59595D
@@ -10387,7 +10404,7 @@ void GLCanvas3D::_render_slice_control() const
                      ImVec2(drop_pos_p.x, drop_pos_p.y + drop_size_p.y - 1.0f),
                      sep_col_p, 1.0f);
         ImVec2 drop_min_print = drop_pos_p;
-        if (ImGui::IsItemClicked() || ImGui::IsItemHovered()) ImGui::OpenPopup("^##id1");
+        if (ImGui::IsItemClicked()) ImGui::OpenPopup("^##id1");
         {
             ImVec4 dark_bg2 = ImVec4(0x59/255.f, 0x59/255.f, 0x5D/255.f, 1.0f); // #59595D
             ImVec4 light_bg2 = config.getColor(DispConfig::e_ct_white);
@@ -10558,6 +10575,8 @@ void GLCanvas3D::_check_and_update_toolbar_icon_scale()
     if (wxGetApp().plater()->is_preview_shown()) {
         auto* m_notification = wxGetApp().plater()->get_notification_manager();
         m_notification->set_scale(sc);
+        ProcessBar::GLToolbar& toolbar = wxGetApp().plater()->get_process_toolbar();
+        toolbar.set_scale(sc);
         return;
     }
 

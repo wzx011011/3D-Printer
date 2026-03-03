@@ -4101,6 +4101,14 @@ void Plater::priv::select_next_view_3D()
 
 void Plater::priv::select_ai_cloud_service()
 {
+    AnalyticsEventPayload payload;
+    payload.type = AnalyticsDataEventType::ANALYTICS_AI_SERVICE_CALL;
+    AnalyticsDataUploadManager::getInstance().triggerUploadTasksWithPayload(
+        AnalyticsUploadTiming::ON_CLICK_START_PRINT_CMD,
+        payload,
+        0,
+        "");
+
     if (!Slic3r::GUI::wxGetApp().is_login()) {
         wxGetApp().swith_community_sub_page("login");
     } else {
@@ -8831,6 +8839,7 @@ void Plater::priv::on_process_completed(SlicingProcessCompletedEvent& evt)
 void Plater::priv::on_action_add(SimpleEvent&)
 {
     if (q != nullptr) {
+        size_t objects_before = q->model().objects.size();
         // q->add_model();
         // BBS open file in toolbar add
         auto start = std::chrono::high_resolution_clock::now();
@@ -8841,6 +8850,11 @@ void Plater::priv::on_action_add(SimpleEvent&)
         int  spend_time = duration.count();
         // 输出耗时
         std::cout << "Function took " << spend_time << " seconds to execute." << std::endl;
+        if (q->model().objects.size() > objects_before) {
+            AnalyticsDataUploadManager::getInstance().triggerUploadTasks(
+                AnalyticsUploadTiming::ON_SOFTWARE_LAUNCH,
+                { AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_ADD });
+        }
     }
 }
 
@@ -8849,6 +8863,7 @@ void Plater::priv::on_action_add_plate(SimpleEvent&)
 {
     if (q != nullptr) {
         take_snapshot("add partplate");
+        int plates_before = this->partplate_list.get_plate_count();
         this->partplate_list.create_plate();
         int new_plate = this->partplate_list.get_plate_count() - 1;
         this->partplate_list.select_plate(new_plate);
@@ -8857,6 +8872,11 @@ void Plater::priv::on_action_add_plate(SimpleEvent&)
         // BBS set default view
         // q->get_camera().select_view("topfront");
         q->get_camera().requires_zoom_to_plate = REQUIRES_ZOOM_TO_ALL_PLATE;
+        if (this->partplate_list.get_plate_count() > plates_before) {
+            AnalyticsDataUploadManager::getInstance().triggerUploadTasks(
+                AnalyticsUploadTiming::ON_SOFTWARE_LAUNCH,
+                { AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_ADD_PLATE });
+        }
     }
 }
 

@@ -8,6 +8,7 @@
 #include "slic3r/GUI/GLCanvas3D.hpp"
 
 #include "slic3r/GUI/GUI_App.hpp"
+#include "slic3r/GUI/AnalyticsDataUploadManager.hpp"
 #include "libslic3r/AppConfig.hpp"
 
 #include "libslic3r/Model.hpp"
@@ -57,6 +58,40 @@ GizmoObjectManipulation::GizmoObjectManipulation(GLCanvas3D& glcanvas)
 {
     m_imperial_units = wxGetApp().app_config->get("use_inches") == "1";
     m_new_unit_string = m_imperial_units ? L("in") : L("mm");
+}
+
+void GizmoObjectManipulation::reset_move_analytics_state()
+{
+    m_move_analytics_reported = false;
+}
+
+void GizmoObjectManipulation::on_move_operation_performed()
+{
+    if (m_move_analytics_reported)
+        return;
+
+    AnalyticsDataUploadManager::getInstance().triggerUploadTasks(
+        AnalyticsUploadTiming::ON_SOFTWARE_LAUNCH,
+        { AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_MOVE });
+
+    m_move_analytics_reported = true;
+}
+
+void GizmoObjectManipulation::reset_rotate_analytics_state()
+{
+    m_rotate_analytics_reported = false;
+}
+
+void GizmoObjectManipulation::on_rotate_operation_performed()
+{
+    if (m_rotate_analytics_reported)
+        return;
+
+    AnalyticsDataUploadManager::getInstance().triggerUploadTasks(
+        AnalyticsUploadTiming::ON_SOFTWARE_LAUNCH,
+        { AnalyticsDataEventType::ANALYTICS_MODEL_ACTION_ROTATE });
+
+    m_rotate_analytics_reported = true;
 }
 
 void GizmoObjectManipulation::UpdateAndShow(const bool show)
@@ -386,10 +421,13 @@ void GizmoObjectManipulation::on_change(const std::string& opt_key, int axis, do
     if (m_imperial_units && (opt_key == "position" || opt_key == "size"))
         new_value *= in_to_mm;
 
-    if (opt_key == "position")
+    if (opt_key == "position") {
         change_position_value(axis, new_value);
-    else if (opt_key == "rotation")
+        on_move_operation_performed();
+    } else if (opt_key == "rotation") {
         change_rotation_value(axis, new_value);
+        on_rotate_operation_performed();
+    }
     else if (opt_key == "scale")
         change_scale_value(axis, new_value);
     else if (opt_key == "size")
@@ -724,6 +762,7 @@ void GizmoObjectManipulation::do_render_move_window(ImGuiWrapper *imgui_wrapper,
     // draw button
     if (ImGui::Button(_u8L("Center").c_str(), ImVec2(btn_width, h))) {
         wxGetApp().plater()->center_selection();
+        on_move_operation_performed();
     }
 
     // recover style

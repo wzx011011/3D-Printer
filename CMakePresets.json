@@ -62,7 +62,7 @@
             "description": "Sets release build type",
             "inherits": "x64-release",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
                 "CMAKE_PREFIX_PATH": "${sourceDir}/deps/build/OrcaSlicer_dep/usr/local/",
                 "CX_DEBUG": "1",
                 "CMAKE_EXPORT_COMPILE_COMMANDS":"1",

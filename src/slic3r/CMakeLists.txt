@@ -382,6 +382,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/2DBed.hpp
     GUI/3DBed.cpp
     GUI/3DBed.hpp
+    GUI/CrealityBedModelMapping.hpp
+    GUI/CrealityBedModelMapping.cpp
     GUI/Camera.cpp
     GUI/Camera.hpp
     GUI/CameraUtils.cpp

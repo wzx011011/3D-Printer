@@ -679,7 +679,10 @@ void TreeSupport::detect_overhangs(bool check_support_necessity/* = false*/)
     const PrintObjectConfig& config = m_object->config();
     SupportType stype = support_type;
     const coordf_t radius_sample_resolution = g_config_tree_support_collision_resolution;
-    const coordf_t extrusion_width = config.line_width.value;
+    //const coordf_t extrusion_width = config.line_width.value;
+    const double nozzle_diameter = m_object->print()->config().nozzle_diameter.get_at(0);
+    const coordf_t extrusion_width = config.line_width.get_abs_value(nozzle_diameter);
+
     const coordf_t extrusion_width_scaled = scale_(extrusion_width);
     const coordf_t max_bridge_length = scale_(config.max_bridge_length.value);
     const bool bridge_no_support = max_bridge_length > 0;

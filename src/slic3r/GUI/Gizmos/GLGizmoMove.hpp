@@ -2,7 +2,6 @@
 #define slic3r_GLGizmoMove_hpp_
 
 #include "GLGizmoBase.hpp"
-//BBS: add size adjust related
 #include "GizmoObjectManipulation.hpp"
 
 
@@ -28,12 +27,9 @@ class GLGizmoMove3D : public GLGizmoBase
     };
     std::array<GrabberConnection, 3> m_grabber_connections;
 
-    //BBS: add size adjust related
     GizmoObjectManipulation* m_object_manipulation;
 
 public:
-    //BBS: add obj manipulation logic
-    //GLGizmoMove3D(GLCanvas3D& parent, const std::string& icon_filename, unsigned int sprite_id);
     GLGizmoMove3D(GLCanvas3D& parent, const std::string& icon_filename, unsigned int sprite_id, GizmoObjectManipulation* obj_manipulation);
     virtual ~GLGizmoMove3D() = default;
 

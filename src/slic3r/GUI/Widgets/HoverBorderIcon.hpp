@@ -43,8 +43,11 @@ protected:
     bool m_force_paint;
     bool           m_bSetEnable = true;
     ScalableBitmap m_bmpDiableIcon;
+    wxSize         m_fixed_size_dip     = wxDefaultSize; // logical (DIP) size when created with explicit size
+    int            m_corner_radius_dip  = 6;
+    int            m_disable_icon_px_cnt_dip = 0;
     double         m_icon_size_or_scale = 13.0;
-    double         m_icon_rel_scale     = 0.6; // default: 75% of min DIP size
+    double         m_icon_rel_scale     = 0.6; // default: 60% of min DIP size
 
 
     wxDECLARE_EVENT_TABLE();

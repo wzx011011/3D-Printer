@@ -2,7 +2,6 @@
 #define slic3r_GLGizmoRotate_hpp_
 
 #include "GLGizmoBase.hpp"
-//BBS: add size adjust related
 #include "GizmoObjectManipulation.hpp"
 
 namespace Slic3r {
@@ -116,16 +115,12 @@ private:
 
 class GLGizmoRotate3D : public GLGizmoBase
 {
-// BBS: change to protected for subclass access
 protected:
     std::array<GLGizmoRotate, 3> m_gizmos;
  
-    //BBS: add size adjust related
     GizmoObjectManipulation* m_object_manipulation;
 
 public:
-    //BBS: add obj manipulation logic
-    //GLGizmoRotate3D(GLCanvas3D& parent, const std::string& icon_filename, unsigned int sprite_id);
     GLGizmoRotate3D(GLCanvas3D& parent, const std::string& icon_filename, unsigned int sprite_id, GizmoObjectManipulation* obj_manipulation);
 
     Vec3d get_rotation() const { return Vec3d(m_gizmos[X].get_angle(), m_gizmos[Y].get_angle(), m_gizmos[Z].get_angle()); }

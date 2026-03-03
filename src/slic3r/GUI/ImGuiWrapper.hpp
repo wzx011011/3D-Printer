@@ -90,6 +90,7 @@ public:
     void set_scaling(float font_size, float scale_style, float scale_both);
     bool update_mouse_data(wxMouseEvent &evt);
     bool update_key_data(wxKeyEvent &evt);
+    void reset_imgui_input_state();
 
     float get_font_size() const { return m_font_size; }
     float get_style_scaling() const { return m_style_scaling; }

@@ -1,4 +1,4 @@
-#include "libslic3r/libslic3r.h"
+﻿#include "libslic3r/libslic3r.h"
 #include "Selection.hpp"
 
 #include "3DScene.hpp"
@@ -1458,27 +1458,44 @@ void Selection::scale_legacy(const Vec3d& scale, TransformationType transformati
         return;
 
     bool is_uniform_scaling = manipul_obj->get_uniform_scaling();
-    for (unsigned int i : m_list) {
-        GLVolume &v = *(*m_volumes)[i];
+    std::vector<unsigned int> ids(m_list.begin(), m_list.end());
 
         // 如果进行均匀缩放，同时又发现变换矩阵受到了类shear变换，那么认为这个模型是外部进行了剪切变换，
         // 此时如果继续做均匀缩放，会使得旋转、缩放变换互相紊乱耦合，那么就把当前变换烘焙进mesh
         // 处理方法参考void GizmoObjectManipulation::set_uniform_scaling(const bool new_value)
-        if (is_uniform_scaling)
-        {
+    if (is_uniform_scaling) {
+        std::map<size_t, size_t> bake_targets; // object_id -> reference instance_id
+        for (unsigned int i : ids) {
+            const GLVolume& v = *(*m_volumes)[i];
+
             Matrix3d rotation;
-            Matrix3d scale;
+            Matrix3d scaling_mtx;
             auto     trafo = v.get_instance_transformation();
-            trafo.get_matrix().computeRotationScaling(&rotation, &scale);
-            if (Geometry::hasShearContamination(scale.cast<float>())) {
-                // Bake the rotation into the meshes of the object.
-                wxGetApp().model().objects[v.composite_id.object_id]->bake_xy_rotation_into_meshes(v.composite_id.instance_id);
-                // Update the 3D scene, selections etc.
-                wxGetApp().plater()->update();
-                // Recalculate cached values at this panel, refresh the screen.
-                wxGetApp().obj_manipul()->UpdateAndShow(true);
+            trafo.get_matrix().computeRotationScaling(&rotation, &scaling_mtx);
+            if (Geometry::hasShearContamination(scaling_mtx.cast<float>()) &&
+                bake_targets.find(v.composite_id.object_id) == bake_targets.end()) {
+                bake_targets.emplace(v.composite_id.object_id, v.composite_id.instance_id);
             }
         }
+
+        if (!bake_targets.empty()) {
+            for (const auto& kv : bake_targets)
+                wxGetApp().model().objects[kv.first]->bake_xy_rotation_into_meshes(kv.second);
+
+            // Update the 3D scene, selections etc.
+            wxGetApp().plater()->update();
+            // Recalculate cached values at this panel, refresh the screen.
+            wxGetApp().obj_manipul()->UpdateAndShow(true);
+
+            // Scene / selection indices may change after update; refresh caches before applying scaling.
+            ids.assign(m_list.begin(), m_list.end());
+            setup_cache();
+        }
+    }
+
+    for (unsigned int i : ids) {
+        GLVolume &v = *(*m_volumes)[i];
+
 
         if (is_single_full_instance()) {
             if (transformation_type.relative()) {
@@ -4448,3 +4465,4 @@ ModelVolume *get_volume(const ObjectID &volume_id, const Selection &selection) {
 
 } // namespace GUI
 } // namespace Slic3r
+

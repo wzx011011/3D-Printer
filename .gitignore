@@ -62,8 +62,3 @@ __pycache__
 /docs/printer_settings_ui_parameters.md
 docs
 flatbuild
-
-# Large binary files
-clang-tidy/clang-tidy.exe
-clang-format.exe
-package/runtime/MicrosoftEdgeWebView2RuntimeInstallerX64.exe

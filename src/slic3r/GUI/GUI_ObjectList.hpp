@@ -298,6 +298,9 @@ private:
                                                            // update_settings_items - updating canvas selection is undesirable,
                                                            // because it would turn off the gizmos (mainly a problem for the SLA gizmo)
 
+    bool m_scroll_req_imgui = false;
+    ObjectDataViewModelNode* m_scroll_target_imgui = nullptr;
+    
     wxDataViewItem m_last_selected_item {nullptr};
 
     std::unique_ptr<ObjList_Png_Texture_Wrapper> m_png_textures;
@@ -722,6 +725,9 @@ public:
         wxDataViewItemArray& selecteds);
 
     void render_current_device_name(const float max_right);
+
+    void request_scroll_to_node_imgui(ObjectDataViewModelNode* node);
+    void consume_scroll_request_imgui(ObjectDataViewModelNode* node, float center = 0.5f);
 };
 
 

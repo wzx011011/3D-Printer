@@ -19,18 +19,9 @@
 #include <boost/filesystem.hpp>
 
 #include "AutomationMgr.hpp"
-#include "WindowStateManager.hpp"
 #include "libslic3r_version.h"
 #include "libslic3r.h"
 #include "Utils.hpp"
-
-#include "slic3r/GUI/GUI_App.hpp"
-#include "slic3r/GUI/MainFrame.hpp"
-#include "slic3r/GUI/Notebook.hpp"
-#include "slic3r/GUI/Plater.hpp"
-#include "slic3r/GUI/GUI_ObjectList.hpp"
-#include "slic3r/GUI/GLCanvas3D.hpp"
-#include "slic3r/GUI/Widgets/HoverBorderIcon.hpp"
 
 #include "libslic3r/Model.hpp"
 #include "libslic3r/ModelObject.hpp"
@@ -243,104 +234,10 @@ std::string AutomationMgr::getTimeStamp()
 
 void AutomationMgr::endFunction()
 {
-    // DISABLED: 防止自动化测试时关闭VSCode
-    // if (g_automationType == AutomationType::GCode) {
-    //     _sleep(2000);
-    //     HANDLE hprocess = GetCurrentProcess();
-    //     TerminateProcess(hprocess, 1);
-    // }
-}
-
-// Window State Methods
-void AutomationMgr::initWindowState(void* hwnd)
-{
-    WindowStateManager::get_instance().initialize(hwnd);
-}
-
-bool AutomationMgr::isWindowStateInitialized()
-{
-    return WindowStateManager::get_instance().is_initialized();
-}
-
-std::string AutomationMgr::getWindowStateJson()
-{
-    return WindowStateManager::get_instance().export_to_json();
-}
-
-bool AutomationMgr::exportWindowStateToFile(const std::string& filepath)
-{
-    return WindowStateManager::get_instance().export_to_file(filepath);
-}
-
-void AutomationMgr::exportUIComponents()
-{
-    using namespace nlohmann;
-    namespace fs = std::filesystem;
-
-    json result;
-    result["timestamp"] = std::time(nullptr);
-    result["components"] = json::array();
-
-    auto add_component = [&](const std::string& id, const std::string& type, wxRect r) {
-        result["components"].push_back({
-            {"id", id},
-            {"type", type},
-            {"x", r.x},
-            {"y", r.y},
-            {"width", r.width},
-            {"height", r.height}
-        });
-    };
-
-    GUI::GUI_App* app = dynamic_cast<GUI::GUI_App*>(wxApp::GetInstance());
-    if (!app) return;
-
-    GUI::MainFrame* mf = app->mainframe;
-    if (!mf || !mf->m_tabpanel) {
-        // Write empty result
-        std::string path = Slic3r::data_dir() + "/automation/ui_components.json";
-        fs::create_directories(Slic3r::data_dir() + "/automation");
-        std::ofstream(path) << result.dump(2);
-        return;
+    if (g_automationType == AutomationType::GCode) {
+        _sleep(2000); // 防止程序关闭太快，导致线程被强制关闭文件未写进去
+        HANDLE hprocess = GetCurrentProcess();
+        TerminateProcess(hprocess, 1);
     }
-
-    int tab = mf->m_tabpanel->GetSelection();
-    GUI::Plater* plater = mf->plater();
-
-    // Slice/Send buttons (available on both Prepare and Preview tabs)
-    if (tab == GUI::MainFrame::tp3DEditor || tab == GUI::MainFrame::tpPreview) {
-        if (plater) {
-            GUI::GLCanvas3D* canvas = plater->get_current_canvas3D();
-            if (canvas) {
-                add_component("slice_button", "button", canvas->getSlicerBtnRec());
-                add_component("send_button", "button", canvas->getSenderBtnRec());
-            }
-        }
-    }
-
-    // Left panel components (only on Prepare tab)
-    if (tab == GUI::MainFrame::tp3DEditor && plater) {
-        GUI::Sidebar& sidebar = plater->sidebar();
-        GUI::ObjectList* obj_list = sidebar.obj_list();
-        if (obj_list) {
-            add_component("printer_combo", "combobox", obj_list->printComboRect());
-            add_component("wifi_button", "button", obj_list->wifiBtn());
-        }
-
-        HoverBorderIcon* mapBtn = sidebar.autoMap_button();
-        if (mapBtn && mapBtn->IsShown()) {
-            wxPoint clientOrigin = mf->ClientToScreen(wxPoint(0, 0));
-            wxPoint screenPos = mapBtn->GetScreenPosition();
-            wxPoint relativePos = screenPos - clientOrigin;
-            add_component("mapping_button", "button",
-                wxRect(relativePos.x, relativePos.y, mapBtn->GetSize().x, mapBtn->GetSize().y));
-        }
-    }
-
-    // Write to file
-    std::string path = Slic3r::data_dir() + "/automation/ui_components.json";
-    fs::create_directories(Slic3r::data_dir() + "/automation");
-    std::ofstream(path) << result.dump(2);
 }
-
 } // namespace Slic3r

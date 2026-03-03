@@ -2217,8 +2217,11 @@ void ObjectList::load_modifier(const wxArrayString&       input_files,
 
 static TriangleMesh create_mesh(const std::string& type_name, const BoundingBoxf3& bb)
 {
-    const double side = wxGetApp().plater()->canvas3D()->get_size_proportional_to_max_bed_size(0.1);
-
+    double side = wxGetApp().plater()->canvas3D()->get_size_proportional_to_max_bed_size(0.1);
+    if(side>100)
+    {
+        side = 20;
+    }
     TriangleMesh mesh;
     if (type_name == "Cube")
         // Sitting on the print bed, left front front corner at (0, 0).
@@ -4660,6 +4663,15 @@ void ObjectList::update_selections()
         }
     }
 
+    // If scene selection is empty, sync selected plate into object list selection.
+    if (sels.empty()) {
+        if (PartPlate* pp = wxGetApp().plater()->get_partplate_list().get_selected_plate(); pp != nullptr) {
+            wxDataViewItem sel_plate = m_objects_model->GetItemByPlateId(pp->get_index());
+            if (sel_plate.IsOk())
+                sels.Add(sel_plate);
+        }
+    }
+
     if (sels.size() == 0 || m_selection_mode & smSettings)
         m_selection_mode = smUndef;
 
@@ -4689,6 +4701,11 @@ void ObjectList::update_selections()
         // Scroll selected Item in the middle of an object list
         ensure_current_item_visible();
     }
+
+    if (!sels.empty()) {
+        request_scroll_to_node_imgui(static_cast<ObjectDataViewModelNode*>(sels.back().GetID()));
+    }
+
 }
 
 void ObjectList::update_selections_on_canvas()
@@ -6285,6 +6302,8 @@ void ObjectList::render_plate(ObjectDataViewModelNode* plate)
 
     bool open = ImGui::TreeNodeEx(plate_full_name.c_str(), tree_node_flags);
 
+    consume_scroll_request_imgui(plate);
+
     ImGui::PopStyleColor(1);
 
     bool left_clicked  = ImGui::IsItemClicked(ImGuiMouseButton_Left);
@@ -6650,6 +6669,9 @@ void ObjectList::render_generic_columns(ObjectDataViewModelNode* node)
 
             ImGui::PopID();
 
+            // --- auto scroll to selection (one-shot) ---
+            consume_scroll_request_imgui(node);
+
             handle_obj_list_select_event(left_clicked, right_clicked, left_draged, shift_press, node_selected, node, sels);
         }
 
@@ -6686,6 +6708,9 @@ void ObjectList::render_generic_columns(ObjectDataViewModelNode* node)
 
         ImGui::PopID();
 
+        // --- auto scroll to selection (one-shot) ---
+        consume_scroll_request_imgui(node);
+
         if (left_clicked || right_clicked) {
             select_node(node, node_selected);
         }
@@ -6715,6 +6740,10 @@ void ObjectList::render_generic_columns(ObjectDataViewModelNode* node)
             // The button size is based on the window size.
             left_clicked = ImGui::Button((node_name + node_label + "name_button").c_str(),
                                           ImVec2(ImGui::GetWindowSize().x, 0));
+
+            // --- auto scroll to selection (one-shot) ---
+            consume_scroll_request_imgui(node);
+
             ImGui::PopStyleVar(1);
         }
 
@@ -7138,9 +7167,9 @@ void ObjectList::render_generic_columns(ObjectDataViewModelNode* node)
         }
     }
 
-    if (node_selected) {
-        ensure_current_item_visible_imgui();
-    }
+    //if (node_selected) {
+    //    ensure_current_item_visible_imgui();
+    //}
 
     if (open) {
         auto type = node->GetType();
@@ -8791,6 +8820,24 @@ ObjectList::device_list_data::~device_list_data()
         if (it.second != GLTexture::INVAILD_ID)
             glsafe(::glDeleteTextures(1, &it.second));
     }
+}
+
+void ObjectList::request_scroll_to_node_imgui(ObjectDataViewModelNode* node)
+{
+    m_scroll_target_imgui = node;
+    m_scroll_req_imgui = (node != nullptr);
+}
+
+void ObjectList::consume_scroll_request_imgui(ObjectDataViewModelNode* node, float center)
+{
+    if (!m_scroll_req_imgui || m_scroll_target_imgui != node)
+        return;
+
+    // 必须在该 node 的“主 item”绘制完成之后调用
+    ImGui::SetScrollHereY(center);
+
+    m_scroll_req_imgui = false;
+    m_scroll_target_imgui = nullptr;
 }
 
 } //namespace GUI

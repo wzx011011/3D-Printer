@@ -31,15 +31,6 @@ namespace Slic3r
             static void        exportPrintConfigToJson(const Model& model, const DynamicPrintConfig& config);
             static std::string getTimeStamp();
             static std::string generateUniqueFilename(const std::string& basePath, const std::string& baseName, const std::string& extension);
-
-            // Window State Methods
-            static void        initWindowState(void* hwnd);
-            static bool        isWindowStateInitialized();
-            static std::string getWindowStateJson();
-            static bool        exportWindowStateToFile(const std::string& filepath);
-
-            // UI Component Export
-            static void        exportUIComponents();
     };
 } // namespace Slic3r
 #endif // _AUTOMATIONMGR_H

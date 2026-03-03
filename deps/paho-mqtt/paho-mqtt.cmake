@@ -31,7 +31,6 @@ orcaslicer_add_cmake_project(MQTT
   #PATCH_COMMAND ${patch_command}
 )
 
-add_dependencies(dep_MQTTC ${OPENSSL_PKG})
 add_dependencies(dep_MQTT dep_MQTTC dep_CURL)
 
 if (MSVC)

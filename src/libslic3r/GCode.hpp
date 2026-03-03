@@ -37,6 +37,7 @@ namespace Slic3r {
 // Forward declarations.
 class GCode;
 class Print;
+class PrintObject;
 
 namespace { struct Item; }
 struct PrintInstance;
@@ -381,11 +382,12 @@ private:
     static std::vector<std::pair<coordf_t, std::vector<LayerToPrint>>> collect_layers_to_print(const Print &print);
 
     std::string generate_skirt(const Print&                     print,
-                            const ExtrusionEntityCollection& skirt,
-                            const Point&                     offset,
-                            const LayerTools&                layer_tools,
-                            const Layer&                     layer,
-                            unsigned int                     extruder_id);
+                               const ExtrusionEntityCollection& skirt,
+                               const Point&                     offset,
+                               const LayerTools&                layer_tools,
+                               const Layer&                     layer,
+                               unsigned int                     extruder_id,
+                               const PrintObject*               object_for_brim = nullptr);
 
     LayerResult process_layer(
         const Print                     &print,

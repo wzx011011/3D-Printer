@@ -3117,7 +3117,7 @@ void Print::_make_wipe_tower()
                             }
 
                             wipe_tower.plan_toolchange((float) layer_tools.print_z, (float) layer_tools.wipe_tower_layer_height,
-                                                       current_extruder_id, extruder_id, volume_to_wipe /*, purge_volume*/);
+                                                       current_extruder_id, extruder_id, volume_to_wipe, purge_volume);
                             current_extruder_id = extruder_id;
                         }
                     }

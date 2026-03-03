@@ -12,6 +12,7 @@
 #include <wx/button.h>
 #include <wx/dataview.h>
 #include <wx/wupdlock.h>
+#include <wx/hyperlink.h>
 #include <wx/debug.h>
 #include <wx/msgdlg.h>
 
@@ -37,6 +38,61 @@ namespace GUI {
 static const char *CONFIG_KEY_PATH  = "printhost_path";
 static const char *CONFIG_KEY_GROUP = "printhost_group";
 static const char* CONFIG_KEY_STORAGE = "printhost_storage";
+
+class UploadErrorDialog : public MsgDialog
+{
+public:
+    UploadErrorDialog(const wxString& summary, const wxString& details)
+        : MsgDialog(static_cast<wxWindow*>(wxGetApp().mainframe),
+            _L("CrealityPrint error"),wxEmptyString, wxOK)
+    {
+        init(summary, details);
+    }
+
+private:
+    void init(const wxString& summary, const wxString& details)
+    {
+        const int spacing = FromDIP(10);
+
+        auto* header = new wxBoxSizer(wxHORIZONTAL);
+        auto* summary_label = new wxStaticText(this, wxID_ANY, summary);
+        header->Add(summary_label, 1, wxALIGN_CENTER_VERTICAL | wxRIGHT, spacing / 2);
+
+        auto* link = new wxHyperlinkCtrl(this, wxID_ANY, _L("More"), wxEmptyString);
+        link->SetVisitedColour(link->GetNormalColour());
+        link->SetHoverColour(link->GetNormalColour());
+        header->Add(link, 0, wxALIGN_CENTER_VERTICAL);
+        content_sizer->Add(header, 0, wxALL | wxEXPAND, spacing);
+
+        auto details_width = FromDIP(360);
+        auto* details_ctrl = new wxTextCtrl(this, wxID_ANY, details, wxDefaultPosition,
+            wxSize(details_width, wxDefaultCoord),
+            wxTE_MULTILINE | wxTE_READONLY | wxTE_NO_VSCROLL | wxBORDER_NONE);
+        details_ctrl->Hide();
+        content_sizer->Add(details_ctrl, 0, wxEXPAND | wxLEFT | wxRIGHT, spacing);
+
+        auto adjust_height = [details_ctrl, spacing, details_width]() {
+            const int line_count = std::max(1, details_ctrl->GetNumberOfLines());
+            const int char_height = details_ctrl->GetCharHeight();
+            const int padding = spacing * 2;
+            const int height = line_count * char_height + padding;
+            details_ctrl->SetMinSize(wxSize(details_width, height));
+            details_ctrl->SetSize(wxSize(details_width, height));
+        };
+
+        link->Bind(wxEVT_HYPERLINK, [link, details_ctrl, adjust_height, this](wxHyperlinkEvent&) {
+            bool show = !details_ctrl->IsShown();
+            details_ctrl->Show(show);
+            if (show)
+                adjust_height();
+            link->SetLabel(show ? _L("Hide") : _L("More"));
+            content_sizer->Layout();
+            Fit();
+        });
+
+        finalize();
+    }
+};
 
 PrintHostSendDialog::PrintHostSendDialog(const fs::path &path, PrintHostPostUploadActions post_actions, const wxArrayString &groups, const wxArrayString& storage_paths, const wxArrayString& storage_names, bool switch_to_device_tab)
     : MsgDialog(static_cast<wxWindow*>(wxGetApp().mainframe), _L("Tips"), _L("Upload to Printer Host with the following filename:"), 0) // Set style = 0 to avoid default creation of the "OK" button. 
@@ -499,13 +555,14 @@ void PrintHostQueueDialog::on_error(Event &evt)
 
     set_state(evt.job_id, ST_ERROR);
 
-    auto errormsg = format_wxstr("%1%\n%2%", _L("Error uploading to print host") + ":", evt.status);
+    auto errormsg = evt.status;
     job_list->SetValue(wxVariant(0), evt.job_id, COL_PROGRESS);
     job_list->SetValue(wxVariant(errormsg), evt.job_id, COL_ERRORMSG);    // Stashes the error message into a hidden column for later
 
     on_list_select();
 
-    GUI::show_error(nullptr, errormsg);
+    UploadErrorDialog dlg(_L("Error uploading to print host"), errormsg);
+    dlg.ShowModal();
 
     wxVariant nm, hst;
     job_list->GetValue(nm, evt.job_id, COL_FILENAME);

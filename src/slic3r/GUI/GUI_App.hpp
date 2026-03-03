@@ -317,6 +317,8 @@ private:
     //app close time
     std::chrono::steady_clock::time_point m_app_close_time;
 
+    void            schedule_software_launch_analytics();
+
   public:
       //try again when subscription fails
     void            on_start_subscribe_again(std::string dev_id);

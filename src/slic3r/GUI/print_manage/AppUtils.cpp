@@ -47,7 +47,9 @@ namespace DM{
 
     void AppUtils::PostMsg(wxWebView* browse, nlohmann::json& data)
     {
-        WebView::RunScript(browse, from_u8(wxString::Format("window.handleStudioCmd('%s');", data.dump(-1, ' ', true)).ToStdString()));
+        std::string json   = data.dump(-1, ' ', true);
+        std::string script = "window.handleStudioCmd(" + json + ");";
+        WebView::RunScript(browse, from_u8(script));
     }
 
     std::string AppUtils::MD5(const std::string& file)

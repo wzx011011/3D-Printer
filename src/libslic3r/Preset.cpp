@@ -3868,39 +3868,10 @@ namespace PresetUtils {
     {
         std::string out;
         const VendorProfile::PrinterModel* pm = PresetUtils::system_printer_model(preset);
-        if (pm != nullptr && !pm->bed_model.empty()) {
-            const auto bed_model_filename = [&]() -> std::string {
-                if (preset.vendor->id != "Creality")
-                    return pm->bed_model;
-
-                auto matches_id = [&](const char* candidate) {
-                    return candidate != nullptr && (
-                        pm->name == candidate || pm->id == candidate || pm->model_id == candidate);
-                };
-                auto matches_model = [&](const char* file, const char* id1 = nullptr, const char* id2 = nullptr,
-                                         const char* id3 = nullptr, const char* id4 = nullptr) {
-                    if (pm->bed_model == file)
-                        return true;
-                    return matches_id(id1) || matches_id(id2) || matches_id(id3) || matches_id(id4);
-                };
-
-                // Prefer explicit dedicated bed models when available; otherwise keep legacy K1 default.
-                if(pm->name.find("SPARKX") != std::string::npos || pm->id.find("SPARKX") != std::string::npos)
-                    return "Creality F022_buildplate_model.stl";
-                if (matches_model("Creality F022_buildplate_model.stl", "Creality F022", "Creality_F022"))
-                    return "Creality F022_buildplate_model.stl";
-                if (matches_model("Creality K2_buildplate_model.stl", "Creality K2", "Creality_K2"))
-                    return "Creality K2_buildplate_model.stl";
-                if (matches_model("Creality K2 Pro_buildplate_model.stl", "Creality K2 Pro", "Creality_K2_Pro"))
-                    return "Creality K2 Pro_buildplate_model.stl";
-                if (matches_model("Creality K2 Plus_buildplate_model.stl", "Creality K2 Plus", "Creality_K2_Plus"))
-                    return "Creality K2 Plus_buildplate_model.stl";
-                return "creality_k1_buildplate_model.stl";
-            }();
-
-            out = Slic3r::data_dir() + "/vendor/" + preset.vendor->id + "/" + bed_model_filename;
+        if (pm != nullptr && preset.vendor != nullptr && !pm->bed_model.empty()) {
+            out = Slic3r::data_dir() + "/vendor/" + preset.vendor->id + "/" + pm->bed_model;
             if (!boost::filesystem::exists(boost::filesystem::path(out))) {
-                out = Slic3r::resources_dir() + "/profiles/" + preset.vendor->id + "/" + bed_model_filename;
+                out = Slic3r::resources_dir() + "/profiles/" + preset.vendor->id + "/" + pm->bed_model;
             }
         }
         return out;

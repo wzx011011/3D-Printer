@@ -323,12 +323,18 @@ bool GLGizmosManager::open_gizmo(EType type)
 {
     int idx = static_cast<int>(type);
 
-    // re-open same type cause closing
-    if (m_current == type) type = Undefined;
+    if (m_current == type)
+        type = Undefined;
 
     if (m_gizmos[idx]->is_activable() && activate_gizmo(type)) {
-        // remove update data into gizmo itself
         update_data();
+#if 1
+        if (type == Move) {
+            m_object_manipulation.reset_move_analytics_state();
+        } else if (type == Rotate) {
+            m_object_manipulation.reset_rotate_analytics_state();
+        }
+#endif
 #ifdef __WXOSX__
         m_parent.post_event(SimpleEvent(wxEVT_PAINT));
 #endif

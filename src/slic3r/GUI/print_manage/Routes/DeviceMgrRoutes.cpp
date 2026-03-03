@@ -428,7 +428,7 @@ namespace DM {
             commandJson["result"] = (isSuccess ? 1 : 0);
             commandJson["info"] = info;
 
-            wxString strJS = wxString::Format("window.handleStudioCmd('%s');", RemotePrint::Utils::url_encode(commandJson.dump()));
+            wxString strJS = wxString::Format("window.handleStudioCmd('%s');", RemotePrint::Utils::url_encode(commandJson.dump(-1, ' ', true)));
             wxGetApp().CallAfter([browse,strJS]{ AppUtils::PostMsg(browse,strJS.ToStdString());});
 
             return true;

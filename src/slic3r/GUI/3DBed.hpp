@@ -110,6 +110,7 @@ private:
     //GLTexture m_temp_texture;
     GLModel m_model;
     Vec3d m_model_offset{ Vec3d::Zero() };
+    Vec3d m_bed_model_scale{ Vec3d::Ones() };
     Axes m_axes;
 
     float m_scale_factor{ 1.0f };
@@ -163,6 +164,7 @@ private:
     //BBS: add partplate related logic
     // Calculate an extended bounding box from axes and current model for visualization purposes.
     BoundingBoxf3 calc_extended_bounding_box(bool consider_model_offset = true) const;
+    Vec3d calc_bed_model_scale(const Pointfs& printable_area, const std::string& bed_model_filename) const;
     void update_model_offset();
     //BBS: with offset
     void update_bed_triangles();

@@ -4,6 +4,7 @@
 #include <functional>
 #include <mutex>
 #include <condition_variable>
+#include "nlohmann/json.hpp"
 
 namespace Slic3r {
 namespace GUI {
@@ -21,17 +22,58 @@ enum class AnalyticsUploadTiming {
 
 // what kind of data to upload
 enum class AnalyticsDataEventType {
-    ANALYTICS_GLOBAL_PRINT_PARAMS, // global print params
-    ANALYTICS_OBJECT_PRINT_PARAMS, // object print params
-    ANALYTICS_SLICE_PLATE,    // slice plate
-    ANALYTICS_FIRST_LAUNCH,   // software first launch (when "AppData\Roaming\Creality" directory first created)
-    ANALYTICS_PREFERENCES_CHANGED,    //user preferences changed
-    ANALYTICS_SOFTWARE_LAUNCH,     //creality slicer launch
-    ANALYTICS_SOFTWARE_CRASH,       // software crash
-    ANALYTICS_BAD_ALLOC,           // software crash
-    ANALYTICS_SOFTWARE_CLOSE,      // software close
-    ANALYTICS_DEVICE_INFO,         // print device info (un_login), local net(from deviceInfo.json)
-    ANALYTICS_ACCOUNT_DEVICE_INFO  // account device info(user login), from account_device_info.json
+    ANALYTICS_GLOBAL_PRINT_PARAMS,
+    ANALYTICS_OBJECT_PRINT_PARAMS,
+    ANALYTICS_SLICE_PLATE,
+    ANALYTICS_FIRST_LAUNCH,
+    ANALYTICS_PREFERENCES_CHANGED,
+    ANALYTICS_SOFTWARE_LAUNCH,
+    ANALYTICS_SOFTWARE_CRASH,
+    ANALYTICS_BAD_ALLOC,
+    ANALYTICS_SOFTWARE_CLOSE,
+    ANALYTICS_DEVICE_INFO,
+    ANALYTICS_ACCOUNT_DEVICE_INFO,
+    ANALYTICS_ONLINE_MODELS,
+    ANALYTICS_PREPARE,
+    ANALYTICS_PREVIEW,
+    ANALYTICS_DEVICE,
+    ANALYTICS_CLICK_HOME_PAGE_PROJECTS,
+    ANALYTICS_CLICK_HOME_PAGE_ONLINE_PARAMS,
+    ANALYTICS_CLICK_HOME_PAGE_TUTORIALS,
+    ANALYTICS_CLICK_HOME_PAGE_PERSON_CENTER,
+    ANALYTICS_CLICK_HOME_PAGE_FEEDBACK,
+    ANALYTICS_CLICK_HOME_PAGE_MAKENOW,
+    ANALYTICS_CLICK_HOME_PAGE_CREALITYMALL,
+    ANALYTICS_MODEL_ACTION_ADD,
+    ANALYTICS_MODEL_ACTION_ADD_PLATE,
+    ANALYTICS_MODEL_ACTION_MOVE,
+    ANALYTICS_MODEL_ACTION_ROTATE,
+    ANALYTICS_MODEL_ACTION_AUTO_ORIENT,
+    ANALYTICS_MODEL_ACTION_ARRANGE_ALL,
+    ANALYTICS_MODEL_ACTION_LAY_ON_FACE,
+    ANALYTICS_MODEL_ACTION_SPLIT_TO_OBJECTS,
+    ANALYTICS_MODEL_ACTION_SPLIT_TO_PARTS,
+    ANALYTICS_MODEL_ACTION_SCALE,
+    ANALYTICS_MODEL_ACTION_HOLLOW,
+    ANALYTICS_MODEL_ACTION_ADD_HOLE,
+    ANALYTICS_MODEL_ACTION_CUT,
+    ANALYTICS_MODEL_ACTION_BOOLEAN,
+    ANALYTICS_MODEL_ACTION_MEASURE,
+    ANALYTICS_MODEL_ACTION_SUPPORT_PAINT,
+    ANALYTICS_MODEL_ACTION_ZSEAM_PAINT,
+    ANALYTICS_MODEL_ACTION_VARIABLE_LAYER,
+    ANALYTICS_MODEL_ACTION_PAINT,
+    ANALYTICS_MODEL_ACTION_EMBOSS,
+    ANALYTICS_MODEL_ACTION_ASSEMBLY_VIEW,
+    ANALYTICS_AI_SERVICE_CALL,
+    ANALYTICS_GOTO_WIKI,
+    ANALYTICS_GOTO_SUPPORT,
+    ANALYTICS_TAB_HOME
+};
+
+struct AnalyticsEventPayload {
+    AnalyticsDataEventType type;
+    nlohmann::json data;
 };
 
 struct AnalyticsProjectInfo {
@@ -60,6 +102,7 @@ public:
     ~AnalyticsDataUploadManager();
 
     void triggerUploadTasks(AnalyticsUploadTiming triggerTiming, const std::vector<AnalyticsDataEventType>& dataEventTypes, int plate_idx = 0, const std::string& device_mac = "");
+    void triggerUploadTasksWithPayload(AnalyticsUploadTiming triggerTiming, const AnalyticsEventPayload& payload, int plate_idx, const std::string& device_mac);
 
     void mark_analytics_project_info(const std::string& full_url,
                                                const std::string& model_id,
@@ -70,11 +113,6 @@ public:
     void set_analytics_project_info_valid(bool valid);
     void clear_analytics_project_info();
 
-    // slice822 click event logging
-    // Parameters:
-    //  - module: module name (function_module)
-    //  - id: module id (module_id)
-    // Builds payload: { slice822: { event_type, function_module, module_id, app_version, operating_system, timestamp } }
     static void uploadSlice822ClickEvent(const std::string& module, int id=1);
 
 private:
@@ -96,6 +134,41 @@ private:
     void uploadSoftwareCloseData();
     void uploadDeviceInfoData();
     void uploadAccountDeviceInfoData();
+    void uploadOnlineModelsEvent();
+    void uploadPrepareEvent();
+    void uploadPreviewEvent();
+    void uploadDeviceEvent();
+    void uploadClickHomePageProjectsEvent();
+    void uploadClickHomePageOnlineParamsEvent();
+    void uploadClickHomePageTutorialsEvent();
+    void uploadClickHomePagePersonCenterEvent();
+    void uploadClickHomePageFeedbackEvent();
+    void uploadClickHomePageMakenowEvent();
+    void uploadClickHomePageCrealitymallEvent();
+    void uploadModelActionAddEvent();
+    void uploadModelActionAddPlateEvent();
+    void uploadModelActionMoveEvent();
+    void uploadModelActionRotateEvent();
+    void uploadModelActionAutoOrientEvent();
+    void uploadModelActionArrangeAllEvent();
+    void uploadModelActionLayOnFaceEvent();
+    void uploadModelActionSplitToObjectsEvent();
+    void uploadModelActionSplitToPartsEvent();
+    void uploadModelActionScaleEvent();
+    void uploadModelActionHollowEvent();
+    void uploadModelActionAddHoleEvent();
+    void uploadModelActionCutEvent();
+    void uploadModelActionBooleanEvent();
+    void uploadModelActionMeasureEvent();
+    void uploadModelActionSupportPaintEvent();
+    void uploadModelActionZseamPaintEvent();
+    void uploadModelActionVariableLayerEvent();
+    void uploadModelActionPaintEvent();
+    void uploadModelActionEmbossEvent();
+    void uploadModelActionAssemblyViewEvent();
+    void uploadAiServiceCallEvent();
+
+    void track_model_action(const std::string& event_name, nlohmann::json& js);
 
 private:
     AnalyticsProjectInfo m_analytics_project_info;

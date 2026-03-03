@@ -28,6 +28,7 @@
 #include "LoginTip.hpp"
 #include <boost/log/trivial.hpp>
 #include <wx/event.h>
+#include "GUI_Utils.hpp"
 wxDEFINE_EVENT(EVT_MENU_HOVER_ENTER, wxCommandEvent);
 wxDEFINE_EVENT(EVT_MENU_HOVER_LEAVE, wxCommandEvent);
 #ifdef __WXMSW__
@@ -538,7 +539,7 @@ void FilamentButton::doRender(wxDC& dc)
     #ifdef TARGET_OS_MAC
          basic_font.SetPointSize(FromDIP(10));
     #else
-        basic_font.SetPointSize(9);
+        basic_font.SetPointSize(FromDIP(9));
     #endif
         dc.SetFont(basic_font);
 
@@ -604,11 +605,11 @@ void FilamentButton::doRender(wxDC& dc)
 
 	m_sizer_main = new wxBoxSizer(wxHORIZONTAL);
 	{
-        m_filamentCombox = new Slic3r::GUI::PlaterPresetComboBox(this, Slic3r::Preset::TYPE_FILAMENT);
-        m_filamentCombox->GetDropDown().setDrapDownGap(0);
-        m_filamentCombox->set_filament_idx(index);
-        //m_filamentCombox->SetMaxSize(wxSize(FromDIP(200), -1));
-        m_filamentCombox->update();
+	        m_filamentCombox = new Slic3r::GUI::PlaterPresetComboBox(this, Slic3r::Preset::TYPE_FILAMENT);
+	        m_filamentCombox->GetDropDown().setDrapDownGap(0);
+	        m_filamentCombox->set_filament_idx(index);
+	        //m_filamentCombox->SetMaxSize(wxSize(FromDIP(200), -1));
+	        m_filamentCombox->update();
         m_filamentCombox->clr_picker->Hide();
         m_filamentCombox->Bind(wxEVT_RIGHT_UP, [&](wxMouseEvent& event) {
             auto    menu = new MaterialContextMenu(this, index);
@@ -631,12 +632,13 @@ void FilamentButton::doRender(wxDC& dc)
         m_filamentCombox->Bind(wxEVT_LEFT_DCLICK, [](wxMouseEvent& e) {
             e.Skip(false); 
         });
-		// filament combox
-        wxSizerItem* item = m_sizer_main->Add(m_filamentCombox, 1, wxALIGN_CENTER_VERTICAL | wxRIGHT, 1);
-        m_sizer_main->SetItemMinSize(m_filamentCombox, (wxSize(FromDIP(40), FromDIP(35))));
-
-        item->SetProportion(wxEXPAND);
-        bool is_dark = Slic3r::GUI::wxGetApp().dark_mode();
+			// filament combox
+	        wxSizerItem* item = m_sizer_main->Add(m_filamentCombox, 1, wxEXPAND | wxALIGN_CENTER_VERTICAL | wxRIGHT, 1);
+	        m_filamentCombox->SetMinSize(wxSize(FromDIP(40), FromDIP(35)));
+	        m_filamentCombox->SetMaxSize(wxSize(-1, FromDIP(35)));
+	        m_sizer_main->SetItemMinSize(m_filamentCombox, wxSize(FromDIP(40), FromDIP(35)));
+	        item->SetProportion(1);
+	        bool is_dark = Slic3r::GUI::wxGetApp().dark_mode();
 
         m_sizer_main->Add(new wxStaticLine(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL), 0, wxEXPAND | wxALL, 5);
 
@@ -665,7 +667,7 @@ void FilamentButton::doRender(wxDC& dc)
             sz->Add(m_lb_extruderTemp, 0, wxALIGN_CENTER_VERTICAL);
             sz->Add(exTemp, 0, wxALIGN_CENTER_VERTICAL | wxLEFT | wxRIGHT, FromDIP(5));
 
-            m_sizer_main->Add(box, 1, wxEXPAND | wxRIGHT | wxUP | wxDOWN, 1);
+	            m_sizer_main->Add(box, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT | wxUP | wxDOWN, 1);
 
             m_lb_extruderTemp->Bind(wxEVT_TEXT_ENTER, [](wxCommandEvent& event) {
                 wxString newText   = event.GetString();
@@ -710,7 +712,7 @@ void FilamentButton::doRender(wxDC& dc)
             sz->Add(m_lb_bedTemp, 0, wxALIGN_CENTER_VERTICAL);
             sz->Add(bedLabel, 0, wxALIGN_CENTER_VERTICAL | wxLEFT | wxRIGHT, FromDIP(5));
 
-            m_sizer_main->Add(box, 1, wxEXPAND | wxUP | wxDOWN, 1);
+	            m_sizer_main->Add(box, 0, wxALIGN_CENTER_VERTICAL | wxUP | wxDOWN, 1);
             m_lb_bedTemp->Bind(wxEVT_TEXT_ENTER, [](wxCommandEvent& event) {
                 wxString newText   = event.GetString();
                 // 在这里处理文本内容修改的逻辑
@@ -770,10 +772,11 @@ void FilamentButton::doRender(wxDC& dc)
     Bind(wxEVT_PAINT, &FilamentPopPanel::OnPaint, this);
 #endif
     Slic3r::GUI::wxGetApp().UpdateDarkUIWin(this);
-	SetSizer(m_sizer_main);
-	Layout();
-	Thaw();
-}
+		SetSizer(m_sizer_main);
+		Layout();
+
+		Thaw();
+	}
 
 void FilamentPopPanel::on_left_down(wxMouseEvent &evt)
 {
@@ -802,7 +805,8 @@ FilamentPopPanel::~FilamentPopPanel() {}
 
 void FilamentPopPanel::Popup(wxPoint position /*= wxDefaultPosition*/)
 {
-	SetPosition(position);
+    if (position != wxDefaultPosition)
+	    SetPosition(position);
 
 	PopupWindow::Popup();
 
@@ -832,15 +836,50 @@ void FilamentPopPanel::Dismiss()
     GetEventHandler()->ProcessEvent(e);
 }
 
-void FilamentPopPanel::sys_color_changed()
-{
-	m_filamentCombox->sys_color_changed();
+	void FilamentPopPanel::sys_color_changed()
+	{
+		m_filamentCombox->sys_color_changed();
 
-	bool is_dark = Slic3r::GUI::wxGetApp().dark_mode();
-    m_img_extruderTemp->SetBitmap_(is_dark ? "extruderTemp" : "extruderTemp_black");
-    m_img_bedTemp->SetBitmap_(is_dark ? "bedTemp" : "bedTemp_black");
-    m_edit_btn->SetBitmap_(is_dark ? "profile_editBtn_d" : "profile_editBtn");
-}
+		bool is_dark = Slic3r::GUI::wxGetApp().dark_mode();
+	    m_img_extruderTemp->SetBitmap_(is_dark ? "extruderTemp" : "extruderTemp_black");
+	    m_img_bedTemp->SetBitmap_(is_dark ? "bedTemp" : "bedTemp_black");
+	    m_edit_btn->SetBitmap_(is_dark ? "profile_editBtn_d" : "profile_editBtn");
+	}
+
+    void FilamentPopPanel::msw_rescale()
+    {
+        Freeze();
+
+        Slic3r::GUI::wxGetApp().UpdateDarkUIWin(this);
+
+        if (m_filamentCombox) {
+            m_filamentCombox->msw_rescale();
+            m_filamentCombox->SetMinSize(wxSize(FromDIP(40), FromDIP(35)));
+            m_filamentCombox->SetMaxSize(wxSize(-1, FromDIP(35)));
+            if (m_sizer_main)
+                m_sizer_main->SetItemMinSize(m_filamentCombox, wxSize(FromDIP(40), FromDIP(35)));
+        }
+
+        if (m_img_extruderTemp)
+            m_img_extruderTemp->msw_rescale();
+        if (m_img_bedTemp)
+            m_img_bedTemp->msw_rescale();
+
+        if (m_lb_extruderTemp)
+            m_lb_extruderTemp->SetMinSize(wxSize(FromDIP(30), -1));
+        if (m_lb_bedTemp)
+            m_lb_bedTemp->SetMinSize(wxSize(FromDIP(30), -1));
+
+        if (m_edit_btn) {
+            m_edit_btn->msw_rescale();
+            if (m_sizer_main)
+                m_sizer_main->SetItemMinSize(m_edit_btn, wxSize(FromDIP(35), FromDIP(35)));
+        }
+
+        Layout();
+        InvalidateBestSize();
+        Thaw();
+    }
 
 /*
 FilamentItem
@@ -996,48 +1035,66 @@ FilamentItem::FilamentItem(wxWindow* parent, const Data& data, const wxSize& siz
             event.Skip();
             });
 
-		m_btn_param_list->Bind(wxEVT_BUTTON, [&](wxEvent& e) {
-			wxPoint ppos = this->GetParent()->ClientToScreen(wxPoint(0, 0));
-			wxPoint pos = this->ClientToScreen(wxPoint(0, 0));
-			pos.y += this->GetRect().height;
-			pos.x = ppos.x + 1;
+			m_btn_param_list->Bind(wxEVT_BUTTON, [&](wxEvent& e) {
+				wxPoint ppos = this->GetParent()->ClientToScreen(wxPoint(0, 0));
+				wxPoint pos = this->ClientToScreen(wxPoint(0, 0));
+				pos.y += this->GetRect().height;
+				pos.x = ppos.x + 1;
 
-			// 添加DPI感知的高度调整
-            const int MIN_HEIGHT = 35;
-            const int MIN_WIDTH  = 200;
-            wxSize    minSize    = wxWindow::FromDIP(wxSize(MIN_WIDTH, MIN_HEIGHT), m_popPanel);
+			    // 添加DPI感知的高度调整
+                const int MIN_HEIGHT = 35;
+                const int MIN_WIDTH  = 200;
+                wxSize    minSize    = wxWindow::FromDIP(wxSize(MIN_WIDTH, MIN_HEIGHT), this);
 
-            m_popPanel->Layout();
-            m_popPanel->Fit();
+				wxSize psz = this->GetParent()->GetSize();
 
-            wxSize sz = m_popPanel->GetBestSize();
+                int parent_width = psz.GetWidth();
+                int panel_width  = std::max(parent_width - 2, minSize.GetWidth());
 
-            if (sz.GetHeight() < minSize.GetHeight()) {
-                sz.SetHeight(minSize.GetHeight());
-            }
-            if (sz.GetWidth() < minSize.GetWidth()) {
-                sz.SetWidth(minSize.GetWidth());
-            }
+                pos.x = ppos.x + parent_width - panel_width;
 
-			wxSize psz = this->GetParent()->GetSize();
+                // Popup 的 DPI 可能在第一次显示后才更新（从低 DPI 切到高 DPI），所以先给一个安全尺寸，
+                // 再在下一轮事件循环里用 popup 自己的 DPI 重算一次。
+                m_popPanel->Dismiss();
+                m_popPanel->SetSize(wxSize(panel_width, minSize.GetHeight()));
+                m_popPanel->Layout();
+                m_popPanel->Popup(pos);
 
-            int parent_width = psz.GetWidth();
-            int panel_width  = std::max(parent_width - 2, minSize.GetWidth());
+                m_popPanel->CallAfter([this]() {
+                    if (!m_popPanel || !m_popPanel->IsShownOnScreen())
+                        return;
 
-            pos.x = ppos.x + parent_width - panel_width;
+                    wxPoint ppos = this->GetParent()->ClientToScreen(wxPoint(0, 0));
+                    wxPoint pos  = this->ClientToScreen(wxPoint(0, 0));
+                    pos.y += this->GetRect().height;
 
-            wxSize ppsize= Slic3r::GUI::wxGetApp().sidebar().GetSize();
-            sz.SetWidth(ppsize.GetWidth());
-			m_popPanel->SetSize(sz);
- 			m_popPanel->Layout();
-            m_popPanel->Dismiss();
-			m_popPanel->SetPosition(pos);
-			m_popPanel->Popup();
-            
+                    const int MIN_HEIGHT = 35;
+                    const int MIN_WIDTH  = 200;
+                    wxSize minSize = wxWindow::FromDIP(wxSize(MIN_WIDTH, MIN_HEIGHT), m_popPanel);
 
-			wxCommandEvent event(wxEVT_BUTTON, GetId());
-			event.SetEventObject(this);
-			GetEventHandler()->ProcessEvent(event);
+                    wxSize psz          = this->GetParent()->GetSize();
+                    int    parent_width = psz.GetWidth();
+                    int    panel_width  = std::max(parent_width - 2, minSize.GetWidth());
+                    pos.x = ppos.x + parent_width - panel_width;
+
+                    m_popPanel->msw_rescale();
+                    m_popPanel->Layout();
+                    m_popPanel->Fit();
+
+                    wxSize sz = m_popPanel->GetBestSize();
+                    if (sz.GetHeight() < minSize.GetHeight())
+                        sz.SetHeight(minSize.GetHeight());
+                    sz.SetWidth(panel_width);
+
+	                    m_popPanel->SetSize(sz);
+	                    m_popPanel->Layout();
+	                    m_popPanel->SetPosition(pos);
+	                });
+	            
+
+				wxCommandEvent event(wxEVT_BUTTON, GetId());
+				event.SetEventObject(this);
+				GetEventHandler()->ProcessEvent(event);
 
 			m_btn_param_list->SetIcon("upBtn_black", "upBtn_white");
             m_btn_param_list->Refresh();
@@ -1301,13 +1358,43 @@ void FilamentItem::update_button_size()
     m_btn_param_list->SetPosition(param_list_pos);
 }
 
-void FilamentItem::msw_rescale() 
-{
-	m_popPanel->m_filamentCombox->msw_rescale();
-    wxSize newSize = wxSize(FromDIP(FILAMENT_BTN_WIDTH), FromDIP(FILAMENT_BTN_HEIGHT));
-    SetSize(newSize);
-    update_button_size();
-}
+	void FilamentItem::msw_rescale() 
+	{
+        if (m_popPanel)
+            m_popPanel->msw_rescale();
+	 
+	    wxSize newSize = wxSize(FromDIP(FILAMENT_BTN_WIDTH), FromDIP(FILAMENT_BTN_HEIGHT));
+	    SetSize(newSize);
+	    update_button_size();
+
+        if (m_popPanel && m_popPanel->IsShownOnScreen()) {
+            wxPoint ppos = this->GetParent()->ClientToScreen(wxPoint(0, 0));
+            wxPoint pos  = this->ClientToScreen(wxPoint(0, 0));
+            pos.y += this->GetRect().height;
+            pos.x = ppos.x + 1;
+
+            const int MIN_HEIGHT = 35;
+            const int MIN_WIDTH  = 200;
+            wxSize minSize = wxWindow::FromDIP(wxSize(MIN_WIDTH, MIN_HEIGHT), this);
+
+            m_popPanel->Layout();
+            wxSize sz = m_popPanel->GetBestSize();
+            if (sz.GetHeight() < minSize.GetHeight())
+                sz.SetHeight(minSize.GetHeight());
+            if (sz.GetWidth() < minSize.GetWidth())
+                sz.SetWidth(minSize.GetWidth());
+
+            wxSize psz = this->GetParent()->GetSize();
+            int parent_width = psz.GetWidth();
+            int panel_width  = std::max(parent_width - 2, minSize.GetWidth());
+            pos.x = ppos.x + parent_width - panel_width;
+            sz.SetWidth(panel_width);
+
+            m_popPanel->SetSize(sz);
+            m_popPanel->Layout();
+            m_popPanel->SetPosition(pos);
+        }
+	}
 
 void FilamentItem::paintEvent(wxPaintEvent& evt)
 {

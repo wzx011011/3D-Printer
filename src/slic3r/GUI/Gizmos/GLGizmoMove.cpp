@@ -1,13 +1,10 @@
 #include "GLGizmoMove.hpp"
 #include "slic3r/GUI/GLCanvas3D.hpp"
 #include "slic3r/GUI/GUI_App.hpp"
-//BBS: GUI refactor
 #include "slic3r/GUI/Plater.hpp"
 #include "libslic3r/AppConfig.hpp"
 
-
 #include <GL/glew.h>
-
 #include <wx/utils.h>
 
 namespace Slic3r {
@@ -19,10 +16,8 @@ const double GLGizmoMove3D::Offset = 50.0;
 const double GLGizmoMove3D::Offset = 10.0;
 #endif
 
-//BBS: GUI refactor: add obj manipulation
 GLGizmoMove3D::GLGizmoMove3D(GLCanvas3D& parent, const std::string& icon_filename, unsigned int sprite_id, GizmoObjectManipulation* obj_manipulation)
     : GLGizmoBase(parent, icon_filename, sprite_id)
-    //BBS: GUI refactor: add obj manipulation
     , m_object_manipulation(obj_manipulation)
 {}
 
@@ -92,6 +87,8 @@ void GLGizmoMove3D::on_stop_dragging()
 {
     m_parent.do_move(L("Gizmo-Move"));
     m_displacement = Vec3d::Zero();
+    if (m_object_manipulation)
+        m_object_manipulation->on_move_operation_performed();
 }
 
 void GLGizmoMove3D::on_dragging(const UpdateData& data)
