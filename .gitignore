@@ -62,3 +62,10 @@ __pycache__
 /docs/printer_settings_ui_parameters.md
 docs
 flatbuild
+# Local tool configs and binaries
+.claude/
+ci_error_log.txt
+run_logs.zip
+clang-format.exe
+clang-tidy/*.exe
+package/runtime/*.exe
