@@ -70,7 +70,7 @@ jobs:
 
       - name: Upload deps artifact
         if: inputs.os == 'windows-latest'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: OrcaSlicer-deps-windows-${{ github.run_number }}
           path: ${{ github.workspace }}/deps/build/OrcaSlicer_dep_windows.zip
